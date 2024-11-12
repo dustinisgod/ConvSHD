@@ -57,6 +57,8 @@ function tank.tankRoutine()
 
         -- Stick to target if not already sticking
         if mq.TLO.Stick.Active() == false then
+            mq.cmd('/nav stop')
+            mq.delay(100)
             mq.cmdf("/stick front %d uw", stickDistance)
             mq.delay(100)
         end
