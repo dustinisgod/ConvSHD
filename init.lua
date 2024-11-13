@@ -19,6 +19,10 @@ utils.PluginCheck()
 
 mq.cmd('/assist off')
 
+if mq.TLO.Me.Pet() ~= "NO PET" then
+    mq.cmd("/pet hold")
+end
+
 mq.imgui.init('controlGUI', gui.controlGUI)
 
 commands.init()

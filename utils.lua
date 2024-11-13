@@ -12,8 +12,6 @@ utils.IsUsingMelee = false
 utils.tankConfig = {}
 local tankConfigPath = mq.configDir .. '/' .. 'ConvSHD_tank_ignore_list.lua'
 
-local charLevel = mq.TLO.Me.Level()
-
 function utils.PluginCheck()
     if utils.IsUsingDanNet then
         if not mq.TLO.Plugin('mq2dannet').IsLoaded() then
@@ -44,6 +42,19 @@ function utils.PluginCheck()
         end
     end
 end
+
+function utils.FacingTarget(tolerance)
+    tolerance = tolerance or 20  -- Default tolerance of 20 degrees
+    if mq.TLO.Target.ID() == 0 then return true end
+
+    local targetHeading = mq.TLO.Target.HeadingTo.DegreesCCW()
+    local myHeading = mq.TLO.Me.Heading.DegreesCCW()
+    local difference = math.abs((targetHeading - myHeading + 360) % 360)
+
+    -- Check if the difference is within the tolerance
+    return difference <= tolerance or difference >= (360 - tolerance)
+end
+
 
 function utils.isInGroup()
     local inGroup = mq.TLO.Group() and mq.TLO.Group.Members() > 0

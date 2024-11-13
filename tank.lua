@@ -39,11 +39,20 @@ end
 function tank.tankRoutine()
     if not gui.botOn and not gui.tankMelee then return end
 
+    local stickDistance = gui.stickDistance
+    local lowerBound = stickDistance * 0.9
+    local upperBound = stickDistance * 1.1
+
+
     -- Main loop to continue until no targets are left in the queue
     while true do
         local mobsInRange = buildMobQueue(gui.tankRange)
         if #mobsInRange == 0 then
             mq.cmd("/squelch /attack off") -- Stop attacking if no more targets
+            mq.delay(100)
+            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
+                mq.cmd("/squelch /pet back")
+            end
             return
         end
 
@@ -66,6 +75,10 @@ function tank.tankRoutine()
         -- Attack target if not already attacking
         if not mq.TLO.Me.Combat() then
             mq.cmd("/squelch /attack on")
+            mq.delay(100)
+            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
+                mq.cmd("/squelch /pet attack")
+            end
         end
 
         -- Combat loop
@@ -89,6 +102,10 @@ function tank.tankRoutine()
                     if gui.returnToCamp and distanceToCamp > 100 then
                         mq.cmd("/squelch /attack off")
                         mq.delay(100)
+                        if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
+                            mq.cmd("/squelch /pet attack")
+                        end
+                        mq.delay(100)
                         mq.cmd("/stick off")
                         mq.delay(100)
                         mq.cmdf("/nav loc %f %f %f", campY, campX, campZ)
@@ -100,8 +117,19 @@ function tank.tankRoutine()
                 end
             end
 
+            if not utils.FacingTarget then
+                mq.cmd("/face id " .. target.ID())
+                mq.delay(100)
+            end
+
             -- Run abilities and spells if within range and target alive
             if target.Distance() <= gui.tankRange then
+                
+                if target and target.Distance() < lowerBound then
+                    mq.cmdf("/stick moveback %s", stickDistance)
+                    mq.delay(100)
+                end
+
                 -- Ability: Taunt
                 if mq.TLO.Me.AbilityReady("Taunt") and mq.TLO.Me.PctAggro() < 100 then
                     mq.cmd("/doability Taunt")
@@ -121,6 +149,13 @@ function tank.tankRoutine()
                     mq.cmd("/cast 2")
                 elseif mq.TLO.Me.SpellReady(3) and charLevel >= 33 and mq.TLO.Me.PctAggro() < 100 then
                     mq.cmd("/cast 3")
+                end
+
+            elseif mq.TLO.Target() and target.Distance() > gui.tankRange and target.Distance() < (gui.tankRange * 1.5) and mq.TLO.Stick() == "ON" then
+
+                if target and target.Distance() > upperBound then
+                    mq.cmdf("/stick moveback %s", stickDistance)
+                    mq.delay(100)
                 end
             end
             

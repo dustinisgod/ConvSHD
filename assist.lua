@@ -51,8 +51,16 @@ function assist.assistRoutine()
 
         if mq.TLO.Target() and not mq.TLO.Target.Mezzed() and mq.TLO.Target.PctHPs() <= gui.assistPercent and mq.TLO.Target.Distance() <= gui.assistRange then
             mq.cmd("/squelch /attack on")
+            mq.delay(100)
+            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
+                mq.cmd("/squelch /pet attack")
+            end
         elseif mq.TLO.Target() and (mq.TLO.Target.Mezzed() or mq.TLO.Target.PctHPs() > gui.assistPercent or mq.TLO.Target.Distance() > (gui.assistRange + 30)) then
             mq.cmd("/squelch /attack off")
+            mq.delay(100)
+            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
+                mq.cmd("/squelch /pet back")
+            end
         end
     end
 
@@ -60,8 +68,16 @@ function assist.assistRoutine()
 
         if mq.TLO.Target() and not mq.TLO.Target.Mezzed() and mq.TLO.Target.PctHPs() <= gui.assistPercent and mq.TLO.Target.Distance() <= gui.assistRange then
             mq.cmd("/squelch /attack on")
+            mq.delay(100)
+            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
+                mq.cmd("/squelch /pet attack")
+            end
         elseif mq.TLO.Target() and (mq.TLO.Target.Mezzed() or mq.TLO.Target.PctHPs() > gui.assistPercent or mq.TLO.Target.Distance() > (gui.assistRange + 30)) then
             mq.cmd("/squelch /attack off")
+            mq.delay(100)
+            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
+                mq.cmd("/squelch /pet back")
+            end
         end
 
         if gui.feignDeath then
@@ -87,6 +103,10 @@ function assist.assistRoutine()
                         end
                         mq.delay(100)
                         mq.cmd("/attack on")
+                        mq.delay(100)
+                        if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
+                            mq.cmd("/squelch /pet attack")
+                        end
                     end
                 end
             end
