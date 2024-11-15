@@ -71,7 +71,7 @@ while gui.controlGUI do
         if gui.tankMelee then
             tank.tankRoutine()
         elseif gui.assistMelee then
-            assist.assistMonitor()
+            assist.assistRoutine()
         end
 
         if gui.buffsOn and mq.TLO.Me.CombatState ~= "COMBAT" then
