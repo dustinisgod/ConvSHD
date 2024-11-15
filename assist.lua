@@ -1,10 +1,16 @@
 local mq = require('mq')
 local gui = require('gui')
 local utils = require('utils')
+local spells = require('spells')
 
 local assist = {}
 
 local charLevel = mq.TLO.Me.Level()
+
+-- Helper function: Check if we have enough mana to cast the spell
+local function hasEnoughMana(spellName)
+    return spellName and mq.TLO.Me.CurrentMana() >= mq.TLO.Spell(spellName).Mana()
+end
 
 function assist.assistRoutine()
 
@@ -80,11 +86,12 @@ function assist.assistRoutine()
             end
         end
 
+        local feignName = spells.findBestSpell("FeignDeath", charLevel)
         if gui.feignDeath then
-            if mq.TLO.Target() and gui.feignDeath and charLevel >= 24 and mq.TLO.Me.PctAggro() >= 80 and mq.TLO.Target.Distance() <= gui.assistRange then
+            if mq.TLO.Target() and gui.feignDeath and charLevel >= 24 and mq.TLO.Me.PctAggro() >= 80 and mq.TLO.Target.Distance() <= gui.assistRange and hasEnoughMana(feignName) and mq.TLO.Me.SpellReady(10)() then
                 mq.cmd('/stick off')
                 mq.delay(100)
-                mq.cmd("/cast 8")
+                mq.cmd("/cast 10")
                 mq.delay(100)
 
                 while mq.TLO.Me.Casting() do
@@ -104,7 +111,7 @@ function assist.assistRoutine()
                         mq.delay(100)
                         mq.cmd("/attack on")
                         mq.delay(100)
-                        if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
+                        if mq.TLO.Target() and gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
                             mq.cmd("/squelch /pet attack")
                         end
                     end
@@ -129,12 +136,19 @@ function assist.assistRoutine()
             end
         end
 
-        if mq.TLO.Target() and mq.TLO.Target.PctHPs() < 50 and mq.TLO.Me.SpellReady(2) and charLevel >= 11 and mq.TLO.Target.Fleeing() and not mq.TLO.Target.Snared() then
-            mq.cmd('/cast 2')
-        end
+        local tapName = spells.findBestSpell("LifeTap", charLevel)
+        local snareName = spells.findBestSpell("Snare", charLevel)
+        local fireName = spells.findBestSpell("FireDot", charLevel)
+        local diseaseName = spells.findBestSpell("DiseaseDoT", charLevel)
 
-        if mq.TLO.Target() and mq.TLO.Me.PctAggro() < 100 and mq.TLO.Me.SpellReady(3) and charLevel >= 33 then
-            mq.cmd('/cast 3')
+        if mq.TLO.Me.SpellReady(1)() and charLevel >= 8 and mq.TLO.Me.PctHPs() < 50 and hasEnoughMana(tapName) then
+            mq.cmd("/cast 1")
+        elseif mq.TLO.Me.SpellReady(2)() and charLevel >= 11 and mq.TLO.Target.PctHPs() < 50 and (mq.TLO.Target.Fleeing() or mq.TLO.Me.PctAggro() < 100) and not mq.TLO.Target.Snared() and mq.TLO.Me.PctMana() > 10 and hasEnoughMana(snareName) then
+            mq.cmd("/cast 2")
+        elseif mq.TLO.Me.SpellReady(4)() and charLevel >= 5 and mq.TLO.Target.Named() and mq.TLO.Me.PctMana() > 30 and hasEnoughMana(fireName) then
+            mq.cmd("/cast 4")
+        elseif mq.TLO.Me.SpellReady(5)() and charLevel >= 28 and mq.TLO.Target.Named() and mq.TLO.Me.PctMana() > 30 and hasEnoughMana(diseaseName) then
+            mq.cmd("/cast 5")
         end
 
         if mq.TLO.Target() and mq.TLO.Target.Distance() <= gui.assistRange then

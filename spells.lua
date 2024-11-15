@@ -16,9 +16,14 @@ local spells = {
         {level = 42, name = "Terror of Shadows"},
         {level = 33, name = "Terror of Darkness"}
     },
-    LifeStealBuff = {
-        {level = 55, name = "Shroud of Undeath"},
-        {level = 22, name = "Vampiric Embrace"}
+    FireDoT = {
+        {level = 53, name = "Boil Blood"},
+        {level = 28, name = "Heat Blood"}
+    },
+    DiseaseDoT = {
+        {level = 59, name = "Asystole"},
+        {level = 36, name = "Heart Flutter"},
+        {level = 5, name = "Disease Cloud"}
     },
     AggroMultiplier = {
         {level = 60, name = "Voice of Terris"},
@@ -26,15 +31,15 @@ local spells = {
         {level = 46, name = "Voice of Shadows"},
         {level = 39, name = "Voice of Darkness"}
     },
+    LifeStealBuff = {
+        {level = 55, name = "Shroud of Undeath"},
+        {level = 22, name = "Vampiric Embrace"}
+    },
     AtkBuff = {
         {level = 16, name = "Grim Aura"}
     },
     PetHasteBuff = {
         {level = 59, name = "Augment Death"}
-    },
-    FeignDeath = {
-        {level = 60, name = "Death Peace"},
-        {level = 24, name = "Feign Death"}
     },
     SummonPet = {
         {level = 58, name = "Cackling Bones"},
@@ -45,6 +50,10 @@ local spells = {
         {level = 22, name = "Convoke Shadow"},
         {level = 14, name = "Bone Walk"},
         {level = 7, name = "Leering Corpse"}
+    },
+    FeignDeath = {
+        {level = 60, name = "Death Peace"},
+        {level = 24, name = "Feign Death"}
     }
 }
 
@@ -106,20 +115,28 @@ function spells.loadDefaultSpells(charLevel)
     if charLevel >= 33 then
         defaultSpells[3] = spells.findBestSpell("HateIncrease", charLevel)
     end
+    if charLevel >= 28 then
+        defaultSpells[4] = spells.findBestSpell("FireDoT", charLevel)
+    end
+    if charLevel >= 5 then
+        defaultSpells[5] = spells.findBestSpell("DiseaseDoT", charLevel)
+    end
     if charLevel >= 22 then
-        defaultSpells[4] = spells.findBestSpell("LifeStealBuff", charLevel)
+        defaultSpells[6] = spells.findBestSpell("LifeStealBuff", charLevel)
     end
     if charLevel >= 39 then
-        defaultSpells[5] = spells.findBestSpell("AggroMultiplier", charLevel)
+        defaultSpells[7] = spells.findBestSpell("AggroMultiplier", charLevel)
     end
     if charLevel >= 16 then
-        defaultSpells[6] = spells.findBestSpell("AtkBuff", charLevel)
+        defaultSpells[8] = spells.findBestSpell("AtkBuff", charLevel)
     end
-    if charLevel >= 59 then
-        defaultSpells[7] = spells.findBestSpell("PetHasteBuff", charLevel)
+    if charLevel >= 59 and mq.TLO.Me.Pet() ~= 'NO PET' then
+        defaultSpells[9] = spells.findBestSpell("PetHasteBuff", charLevel)
+    elseif charLevel >= 7 and mq.TLO.Me.Pet() == 'NO PET' then
+        defaultSpells[9] = spells.findBestSpell("SummonPet", charLevel)
     end
     if charLevel >= 24 then
-        defaultSpells[8] = spells.findBestSpell("FeignDeath", charLevel)
+        defaultSpells[10] = spells.findBestSpell("FeignDeath", charLevel)
     end
     return defaultSpells
 end

@@ -82,8 +82,6 @@ while gui.controlGUI do
             utils.monitorPet()
         end
 
-        checkBotOn(currentLevel)
-
         local newLevel = mq.TLO.Me.Level()
         if newLevel ~= currentLevel then
             printf(string.format("Level has changed from %d to %d. Updating spells.", currentLevel, newLevel))

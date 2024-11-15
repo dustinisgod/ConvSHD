@@ -60,13 +60,13 @@ function buffer.buffRoutine()
             -- Define specific slots for each spell type
             local spellSlot
             if spellType == "AggroMultiplier" then
-                spellSlot = 5
+                spellSlot = 7
             elseif spellType == "LifeStealBuff" then
-                spellSlot = 4
-            elseif spellType == "AtkBuff" then
                 spellSlot = 6
+            elseif spellType == "AtkBuff" then
+                spellSlot = 8
             else
-                spellSlot = 8 -- Default slot for unspecified cases
+                spellSlot = 10 -- Default slot for unspecified cases
             end
 
             -- Check if the spell is already memorized in the slot, load if necessary
@@ -90,7 +90,11 @@ function buffer.processBuffQueue()
         if not gui.botOn and gui.buffsOn then
             return
         end
-        
+
+        if not preCastChecks() then
+            return
+        end
+
         if not handleTankRoutineAndReturn() then
             return
         end

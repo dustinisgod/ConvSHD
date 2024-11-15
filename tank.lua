@@ -2,26 +2,37 @@ local mq = require('mq')
 local gui = require('gui')
 local utils = require('utils')
 local nav = require('nav')
+local spells = require('spells')
+
+local DEBUG_MODE = false
+-- Debug print helper function
+local function debugPrint(...)
+    if DEBUG_MODE then
+        print(...)
+    end
+end
 
 local tank = {}
-local stickDistance = 10
 local charLevel = mq.TLO.Me.Level()
+local previousNearbyNPCs = 0 -- Initialize to track changes in nearby NPC count
 
 local function buildMobQueue(range)
+    debugPrint("Building mob queue with range:", range)
     local zoneName = mq.TLO.Zone.ShortName() or "UnknownZone"
-    local ignoreList = utils.tankConfig[zoneName] or {} -- Zone-specific ignore list
-    local globalIgnoreList = utils.tankConfig.globalIgnoreList or {} -- Global ignore list
+    local ignoreList = utils.tankConfig[zoneName] or {}
+    local globalIgnoreList = utils.tankConfig.globalIgnoreList or {}
 
     local mobs = mq.getFilteredSpawns(function(spawn)
         local mobName = spawn.CleanName()
-        -- Check if mob is in the ignore list for the zone or the global ignore list
-        -- Ensure mob is within range, alive, not ignored, and in line of sight
-        return spawn.Type() == "NPC" and 
-               spawn.Distance() <= range and 
-               not spawn.Dead() and 
-               spawn.LineOfSight() and  -- Ensure mob is in line of sight
-               not ignoreList[mobName] and 
-               not globalIgnoreList[mobName]
+        local isPlayerPet = spawn.Owner.Type() == "PC"
+        local isIgnored = ignoreList[mobName] or globalIgnoreList[mobName]
+
+        return spawn.Type() == "NPC" and
+               spawn.Distance() <= range and
+               not isPlayerPet and
+               not spawn.Dead() and
+               spawn.LineOfSight() and
+               not isIgnored
     end)
 
     -- Sort mobs by priority: named mobs first, then by level (descending)
@@ -33,82 +44,160 @@ local function buildMobQueue(range)
         end
     end)
 
+    debugPrint("Mob queue built with", #mobs, "mobs in range")
     return mobs
 end
 
+local function hasEnoughMana(spellName)
+    local manaCheck = spellName and mq.TLO.Me.CurrentMana() >= mq.TLO.Spell(spellName).Mana()
+    debugPrint("Checking mana for spell:", spellName, "Has enough mana:", manaCheck)
+    return manaCheck
+end
+
+local function inRange(spellName)
+    local rangeCheck = mq.TLO.Target() and spellName and mq.TLO.Target.Distance() <= mq.TLO.Spell(spellName).Range() or false
+    debugPrint("Checking range for spell:", spellName, "In range:", rangeCheck)
+    return rangeCheck
+end
+
+local function currentlyActive(spell)
+    if not mq.TLO.Target() then
+        print("No target selected.")
+        return false -- No target to check
+    end
+
+    local spellName = mq.TLO.Spell(spell).Name()
+    if not spellName then
+        print("Spell not found:", spell)
+        return false -- Spell doesn't exist or was not found
+    end
+
+    -- Safely get the buff count with a default of 0 if nil
+    local buffCount = mq.TLO.Target.BuffCount() or 0
+    for i = 1, buffCount do
+        if mq.TLO.Target.Buff(i).Name() == spellName then
+            return true -- Spell is active on the target
+        end
+    end
+
+    return false -- Spell is not active on the target
+end
+
 function tank.tankRoutine()
-    if not gui.botOn and not gui.tankMelee then return end
+    if not gui.botOn and not gui.tankMelee then
+        debugPrint("Bot or melee mode is off; exiting tankRoutine.")
+        return
+    end
 
     local stickDistance = gui.stickDistance
-    local lowerBound = stickDistance * 0.9
+    local lowerBound = stickDistance * 0.5
     local upperBound = stickDistance * 1.1
 
-
-    -- Main loop to continue until no targets are left in the queue
     while true do
-        local mobsInRange = buildMobQueue(gui.tankRange)
+        local nearbyNPCs = mq.TLO.SpawnCount(string.format('npc radius %d los', gui.tankRange))() or 0
+        local mobsInRange = {}
+
+        if nearbyNPCs > 0 then
+        mobsInRange = buildMobQueue(gui.tankRange)
+        end
+
         if #mobsInRange == 0 then
             mq.cmd("/squelch /attack off") -- Stop attacking if no more targets
             mq.delay(100)
             if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
                 mq.cmd("/squelch /pet back")
+                mq.delay(100)
             end
             return
         end
 
-        local target = table.remove(mobsInRange, 1) -- Highest priority target
-
-        -- Engage target if valid
-        if target and target.Distance() <= gui.tankRange and (not mq.TLO.Target() or mq.TLO.Target.ID() ~= target.ID()) then
-            mq.cmdf("/target id %d", target.ID())
-            mq.delay(200) -- Short delay to allow the target command to take effect
+        if #mobsInRange == 0 then
+            debugPrint("No mobs in range. Exiting tankRoutine.")
+            if mq.TLO.Me.Combat() then
+                debugPrint("Exiting combat mode.")
+                mq.cmd("/squelch /attack off")
+                mq.delay(100)
+                if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and mq.TLO.Me.Pet.Combat() then
+                    debugPrint("Calling pet back.")
+                    mq.cmd("/squelch /pet back")
+                    mq.delay(100)
+                end
+            end
+            debugPrint("Stopping stick and navigation.")
+            return
         end
 
-        -- Stick to target if not already sticking
-        if mq.TLO.Stick.Active() == false then
-            mq.cmd('/nav stop')
-            mq.delay(100)
+        local target = table.remove(mobsInRange, 1)
+        debugPrint("Target:", target)
+
+        if target and target.Distance() <= gui.tankRange and (not mq.TLO.Target() or mq.TLO.Target.ID() ~= target.ID()) and target.LineOfSight() then
+            mq.cmdf("/target id %d", target.ID())
+            mq.delay(200)
+            debugPrint("Target set to:", target.CleanName())
+        end
+
+        if mq.TLO.Target() and mq.TLO.Stick.Active() == false and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
+            debugPrint("Not stuck to target; initiating stick command.")
+            if mq.TLO.Navigation.Active() then
+                mq.cmd('/nav stop')
+                mq.delay(100)
+            end
             mq.cmdf("/stick front %d uw", stickDistance)
             mq.delay(100)
         end
 
-        -- Attack target if not already attacking
-        if not mq.TLO.Me.Combat() then
+        if target and not mq.TLO.Me.Combat() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
+            debugPrint("Starting attack on target:", mq.TLO.Target.CleanName())
             mq.cmd("/squelch /attack on")
             mq.delay(100)
-            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
+            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and not mq.TLO.Me.Pet.Combat() then
+                debugPrint("Sending pet to attack.")
                 mq.cmd("/squelch /pet attack")
+                mq.delay(100)
             end
         end
+        debugPrint("Combat state: ", mq.TLO.Me.CombatState())
 
-        -- Combat loop
-        while mq.TLO.Me.CombatState() == "COMBAT" and target and target.ID() == mq.TLO.Target.ID() and not target.Dead() do
-            -- Rebuild mob queue to monitor new spawns entering range
-            mobsInRange = buildMobQueue(gui.tankRange)
+        while mq.TLO.Me.CombatState() == "COMBAT" and target and mq.TLO.Target.ID() == mq.TLO.Target.ID() and not mq.TLO.Target.Dead() do
+            debugPrint("Combat state: ", mq.TLO.Me.CombatState())
 
+            if not mq.TLO.Target() or mq.TLO.Target() and (mq.TLO.Target.Dead() or mq.TLO.Target.PctHPs() < 0) then
+                debugPrint("Target is dead. Exiting combat loop.")
+                break
+            end
 
-            if mq.TLO.Target() and mq.TLO.Me.PctAggro() < 100 then
+            if mq.TLO.Target() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() and not mq.TLO.Me.Combat() then
+                debugPrint("Starting attack on target:", mq.TLO.Target.CleanName())
+                mq.cmd("/squelch /attack on")
+                mq.delay(100)
+                if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and not mq.TLO.Me.Pet.Combat() then
+                    debugPrint("Sending pet to attack.")
+                    mq.cmd("/squelch /pet attack")
+                    mq.delay(100)
+                end
+            end
+
+            if mq.TLO.Me.PctAggro() < 100 then
                 if nav.campLocation then
-                    -- Retrieve player and camp coordinates
                     local playerX, playerY = mq.TLO.Me.X(), mq.TLO.Me.Y()
                     local campX = tonumber(nav.campLocation.x) or 0
                     local campY = tonumber(nav.campLocation.y) or 0
-                    local campZ = tonumber(nav.campLocation.z) or 0
-            
-                    -- Calculate distance to camp
                     local distanceToCamp = math.sqrt((playerX - campX)^2 + (playerY - campY)^2)
-            
-                    -- Navigate back to camp if beyond threshold
+
                     if gui.returnToCamp and distanceToCamp > 100 then
-                        mq.cmd("/squelch /attack off")
-                        mq.delay(100)
-                        if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
-                            mq.cmd("/squelch /pet attack")
+                        debugPrint("Returning to camp location.")
+                        if mq.TLO.Me.Combat() then
+                            mq.cmd("/squelch /attack off")
+                            mq.delay(100)
                         end
-                        mq.delay(100)
+                        if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and mq.TLO.Me.Pet.Combat() then
+                            mq.cmd("/squelch /pet back")
+                            mq.delay(100)
+                        end
                         mq.cmd("/stick off")
                         mq.delay(100)
-                        mq.cmdf("/nav loc %f %f %f", campY, campX, campZ)
+                        mq.cmdf("/nav loc %f %f %f", campY, campX, nav.campLocation.z or 0)
+                        mq.delay(100)
                         while mq.TLO.Navigation.Active() do
                             mq.delay(50)
                         end
@@ -117,50 +206,89 @@ function tank.tankRoutine()
                 end
             end
 
-            if not utils.FacingTarget then
-                mq.cmd("/face id " .. target.ID())
+            if not utils.FacingTarget() and not mq.TLO.Target.Dead() and mq.TLO.Target.LineOfSight() then
+                debugPrint("Facing target:", mq.TLO.Target.CleanName())
+                mq.cmd("/face id " .. mq.TLO.Target.ID())
                 mq.delay(100)
             end
 
-            -- Run abilities and spells if within range and target alive
-            if target.Distance() <= gui.tankRange then
-                
-                if target and target.Distance() < lowerBound then
+            if mq.TLO.Target() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
+
+                if mq.TLO.Target.Distance() < lowerBound then
+                    debugPrint("Target too close; moving back.")
                     mq.cmdf("/stick moveback %s", stickDistance)
                     mq.delay(100)
                 end
 
-                -- Ability: Taunt
-                if mq.TLO.Me.AbilityReady("Taunt") and mq.TLO.Me.PctAggro() < 100 then
+                if mq.TLO.Me.AbilityReady("Taunt")() and mq.TLO.Me.PctAggro() < 100 then
+                    debugPrint("Using Taunt ability.")
                     mq.cmd("/doability Taunt")
+                    mq.delay(100)
                 end
-                
-                -- Ability: Bash or Slam
-                if mq.TLO.Me.AbilityReady("Bash") and mq.TLO.Me.Secondary() ~= "0" then
+
+                if mq.TLO.Me.AbilityReady("Bash")() and mq.TLO.Me.Secondary() ~= "0" then
+                    debugPrint("Using Bash ability.")
                     mq.cmd("/doability Bash")
-                elseif mq.TLO.Me.AbilityReady("Slam") and mq.TLO.Me.Secondary() == "0" and mq.TLO.Me.Race() == "Ogre" then
+                    mq.delay(100)
+                elseif mq.TLO.Me.AbilityReady("Slam")() and mq.TLO.Me.Secondary() == "0" and mq.TLO.Me.Race() == "Ogre" then
+                    debugPrint("Using Slam ability.")
                     mq.cmd("/doability Slam")
+                    mq.delay(100)
                 end
 
-                -- Cast spells based on conditions
-                if mq.TLO.Me.SpellReady(1) and charLevel >= 8 and mq.TLO.Me.PctHPs() < 50 then
-                    mq.cmd("/cast 1")
-                elseif mq.TLO.Me.SpellReady(2) and charLevel >= 11 and target.PctHPs() < 50 and target.Fleeing() and not mq.TLO.Target.Snared() then
-                    mq.cmd("/cast 2")
-                elseif mq.TLO.Me.SpellReady(3) and charLevel >= 33 and mq.TLO.Me.PctAggro() < 100 then
-                    mq.cmd("/cast 3")
+                local spellsToCast = {
+                    {name = "LifeTap", spell = spells.findBestSpell("LifeTap", charLevel), slot = 1, cond = charLevel >= 8 and mq.TLO.Me.PctHPs() < 50},
+                    {name = "Snare", spell = spells.findBestSpell("Snare", charLevel), slot = 2, cond = charLevel >= 11 and mq.TLO.Target() and (mq.TLO.Target.PctHPs() or 0) < 50 and (mq.TLO.Target.Fleeing() or (mq.TLO.Me.PctAggro() or 100) < 100) and not mq.TLO.Target.Snared()},
+                    {name = "HateIncrease", spell = spells.findBestSpell("HateIncrease", charLevel), slot = 3, cond = charLevel >= 33 and mq.TLO.Me.PctAggro() < 100},
+                    {name = "FireDot", spell = spells.findBestSpell("FireDot", charLevel), slot = 4, cond = charLevel >= 5 and mq.TLO.Target.Named()},
+                    {name = "DiseaseDoT", spell = spells.findBestSpell("DiseaseDoT", charLevel), slot = 5, cond = charLevel >= 28 and mq.TLO.Target.Named()}
+                }
+
+                for _, spellInfo in ipairs(spellsToCast) do
+                    local spellName, spell, slot, condition = spellInfo.name, spellInfo.spell, spellInfo.slot, spellInfo.cond
+                    if spell and condition and mq.TLO.Me.SpellReady(slot)() and hasEnoughMana(spell) and inRange(spell) and not currentlyActive(spell) then
+                        mq.cmdf("/squelch /stick off")
+                        mq.delay(100)
+                        debugPrint("Casting spell:", spellName, "on slot", slot)
+                        mq.cmdf("/cast %d", slot)
+                        mq.delay(100)
+                    end
+                    while mq.TLO.Me.Casting() do
+                        mq.delay(10)
+                    end
                 end
 
-            elseif mq.TLO.Target() and target.Distance() > gui.tankRange and target.Distance() < (gui.tankRange * 1.5) and mq.TLO.Stick() == "ON" then
-
-                if target and target.Distance() > upperBound then
-                    mq.cmdf("/stick moveback %s", stickDistance)
+            elseif mq.TLO.Target() and mq.TLO.Target.Distance() > upperBound and mq.TLO.Target.LineOfSight() then
+                debugPrint("Target too far; moving closer.")
+                mq.cmdf("/squelch /stick front %d uw", stickDistance)
+                mq.delay(100)
+            elseif mq.TLO.Target() and mq.TLO.Target.Distance() > (upperBound + 100) and not mq.TLO.Target.LineOfSight() then
+            debugPrint("Target out of range and line of sight; ending combat.")
+            if mq.TLO.Me.Combat() then
+                mq.cmd("/squelch /attack off")
+                mq.delay(100)
+                if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and mq.TLO.Me.Pet.Combat() then
+                    mq.cmd("/squelch /pet back")
                     mq.delay(100)
                 end
             end
-            
-            mq.delay(50) -- Yield time for the loop
+            if gui.returnToCamp and nav.campLocation then
+                debugPrint("Returning to camp location.")
+                mq.cmd("/stick off")
+                mq.delay(100)
+                mq.cmdf("/nav loc %f %f %f", nav.campLocation.y, nav.campLocation.x, nav.campLocation.z or 0)
+                mq.delay(100)
+                while mq.TLO.Navigation.Active() do
+                    mq.delay(50)
+                end
+            end
+                mq.delay(100)
+            end
+
+            mq.delay(100)
         end
+        debugPrint("Exiting combat loop.")
+        mq.delay(100)
     end
 end
 

@@ -9,7 +9,7 @@ function pet.petRoutine()
     -- Check if pet usage is enabled in GUI and if the character doesn't have a pet summoned
     if gui.usePet and mq.TLO.Me.Pet() == "NO PET" and charLevel >= 7 then
         -- Ensure pet summon spell is loaded
-        local petSpellSlot = 8 -- Arbitrary slot for pet summon spell
+        local petSpellSlot = 9 -- Arbitrary slot for pet summon spell
         local petSpellName = spells.findBestSpell("SummonPet", charLevel)
         
         -- Only proceed if petSpellName is valid
@@ -45,7 +45,7 @@ function pet.petRoutine()
     -- If character level is 59+ and pet exists, check and cast "Augment Death" if not present
     if gui.usePet and charLevel >= 59 and mq.TLO.Me.Pet() ~= "NO PET" and not mq.TLO.Me.Pet.Buff("Augment Death")() then
         -- Ensure "Augment Death" spell is loaded
-        local buffSpellSlot = 7 -- Arbitrary slot for the pet buff spell
+        local buffSpellSlot = 9 -- Arbitrary slot for the pet buff spell
         local buffSpellName = spells.findBestSpell("PetHasteBuff", charLevel)
         
         -- Only proceed if buffSpellName is valid

@@ -12,6 +12,14 @@ utils.IsUsingMelee = false
 utils.tankConfig = {}
 local tankConfigPath = mq.configDir .. '/' .. 'ConvSHD_tank_ignore_list.lua'
 
+local DEBUG_MODE = false
+-- Debug print helper function
+local function debugPrint(...)
+    if DEBUG_MODE then
+        print(...)
+    end
+end
+
 function utils.PluginCheck()
     if utils.IsUsingDanNet then
         if not mq.TLO.Plugin('mq2dannet').IsLoaded() then
@@ -81,7 +89,7 @@ end
 local lastNavTime = 0
 
 function utils.monitorNav()
-
+debugPrint("monitorNav")
     if gui.botOn and (gui.chaseOn or gui.returnToCamp) and not gui.pullOn then
         if not gui then
             printf("Error: gui is nil")
@@ -91,9 +99,11 @@ function utils.monitorNav()
         local currentTime = os.time()
 
         if gui.returnToCamp and (currentTime - lastNavTime >= 5) then
+            debugPrint("Run returntocamp routine")
             nav.checkCampDistance()
             lastNavTime = currentTime
         elseif gui.chaseOn and (currentTime - lastNavTime >= 2) then
+            debugPrint("Run Chase routine")
             nav.chase()
             lastNavTime = currentTime
         end
@@ -106,6 +116,7 @@ local lastBuffTime = 0
 
 function utils.monitorBuffs()
 local buffer = require('buffer')
+    debugPrint("monitorBuffs")
     if gui.botOn and gui.buffsOn then
         if not gui then
             printf("Error: gui is nil")
@@ -116,6 +127,7 @@ local buffer = require('buffer')
 
         -- Check buffs every 5 minutes (300 seconds)
         if gui.buffsOn and (currentTime - lastBuffTime >= 30) then
+            debugPrint("Run Buff routine")
             buffer.buffRoutine()
             lastBuffTime = currentTime
         end
@@ -125,16 +137,21 @@ local buffer = require('buffer')
 end
 
 function utils.sitMed()
-    if gui.botOn and gui.sitMed and mq.TLO.Me.PctMana() < 100 and not mq.TLO.Me.Mount() then
-        local nearbyNPCs = mq.TLO.SpawnCount(string.format('npc radius 50'))() or 0
-
+    debugPrint("sitMed")
+    if gui.botOn and gui.sitMed and mq.TLO.Me.PctMana() < 100 and not mq.TLO.Me.Mount() and not mq.TLO.Me.Combat() ~= "COMBAT" then
+        local nearbyNPCs = mq.TLO.SpawnCount(string.format('npc radius %d los', gui.tankRange))() or 0
+        debugPrint("Nearby NPCs: " .. nearbyNPCs)
         if mq.TLO.Me.PctHPs() < 70 and nearbyNPCs > 0 then
+            debugPrint("Returning: HPs < 70 or nearby NPCs > 0")
             return
         end
-
-        if nearbyNPCs == 0 or (mq.TLO.Me.PctHPs() >= 70) then
+        debugPrint("PctHPs: " .. mq.TLO.Me.PctHPs())
+        if nearbyNPCs == 0 then
+            debugPrint("No nearby NPCs or HPs >= 70")
             if not mq.TLO.Me.Casting() and not mq.TLO.Me.Moving() then
+                debugPrint("Not casting or moving")
                 if not mq.TLO.Me.Sitting() then
+                    debugPrint("Not sitting")
                     mq.cmd('/sit')
                     mq.delay(100)
                 end
@@ -147,6 +164,7 @@ local lastPetTime = 0
 
 function utils.monitorPet()
 local pet = require('pet')
+debugPrint("monitorPet")
     if gui.botOn and gui.usePet then
         if not gui then
             printf("Error: gui is nil")
@@ -156,7 +174,8 @@ local pet = require('pet')
         local currentTime = os.time()
 
         -- Check buffs every 5 minutes (300 seconds)
-        if gui.usePet and (currentTime - lastPetTime >= 30) then --300
+        if gui.usePet and (currentTime - lastPetTime >= 60) then
+            debugPrint("Run Pet routine")
             pet.petRoutine()
             lastPetTime = currentTime
         end
@@ -240,7 +259,7 @@ function utils.referenceLocation(range)
 
     -- Determine reference location based on returnToCamp or chaseOn settings
     local referenceLocation
-    if gui.returnToCamp then
+    if gui.assistMelee and gui.returnToCamp then
         nav.campLocation = nav.campLocation or {x = 0, y = 0, z = 0}  -- Initialize campLocation with a default if needed
         referenceLocation = {x = nav.campLocation.x, y = nav.campLocation.y, z = nav.campLocation.z}
     elseif gui.chaseOn or (not gui.chaseon and not gui.returnToCamp) then
