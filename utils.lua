@@ -115,7 +115,7 @@ end
 local lastBuffTime = 0
 
 function utils.monitorBuffs()
-local buffer = require('buffer')
+local selfbuffer = require('selfbuffer')
     debugPrint("monitorBuffs")
     if gui.botOn and gui.buffsOn then
         if not gui then
@@ -128,7 +128,7 @@ local buffer = require('buffer')
         -- Check buffs every 5 minutes (300 seconds)
         if gui.buffsOn and (currentTime - lastBuffTime >= 30) then
             debugPrint("Run Buff routine")
-            buffer.buffRoutine()
+            selfbuffer.buffRoutine()
             lastBuffTime = currentTime
         end
     else

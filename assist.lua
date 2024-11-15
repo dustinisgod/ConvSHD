@@ -2,14 +2,53 @@ local mq = require('mq')
 local gui = require('gui')
 local utils = require('utils')
 local spells = require('spells')
+local nav = require('nav')
+
+local DEBUG_MODE = false
+-- Debug print helper function
+local function debugPrint(...)
+    if DEBUG_MODE then
+        print(...)
+    end
+end
 
 local assist = {}
 
 local charLevel = mq.TLO.Me.Level()
 
--- Helper function: Check if we have enough mana to cast the spell
 local function hasEnoughMana(spellName)
-    return spellName and mq.TLO.Me.CurrentMana() >= mq.TLO.Spell(spellName).Mana()
+    local manaCheck = spellName and mq.TLO.Me.CurrentMana() >= mq.TLO.Spell(spellName).Mana()
+    debugPrint("Checking mana for spell:", spellName, "Has enough mana:", manaCheck)
+    return manaCheck
+end
+
+local function inRange(spellName)
+    local rangeCheck = mq.TLO.Target() and spellName and mq.TLO.Target.Distance() <= mq.TLO.Spell(spellName).Range() or false
+    debugPrint("Checking range for spell:", spellName, "In range:", rangeCheck)
+    return rangeCheck
+end
+
+local function currentlyActive(spell)
+    if not mq.TLO.Target() then
+        print("No target selected.")
+        return false -- No target to check
+    end
+
+    local spellName = mq.TLO.Spell(spell).Name()
+    if not spellName then
+        print("Spell not found:", spell)
+        return false -- Spell doesn't exist or was not found
+    end
+
+    -- Safely get the buff count with a default of 0 if nil
+    local buffCount = mq.TLO.Target.BuffCount() or 0
+    for i = 1, buffCount do
+        if mq.TLO.Target.Buff(i).Name() == spellName then
+            return true -- Spell is active on the target
+        end
+    end
+
+    return false -- Spell is not active on the target
 end
 
 function assist.assistRoutine()
@@ -23,6 +62,10 @@ function assist.assistRoutine()
     if #mobsInRange == 0 then
         return
     end
+
+    local stickDistance = gui.stickDistance
+    local lowerBound = stickDistance * 0.5
+    local upperBound = stickDistance * 1.1
 
     -- Check if the main assist is a valid PC, is alive, and is in the same zone
     local mainAssistSpawn = mq.TLO.Spawn(gui.mainAssist)
@@ -58,126 +101,95 @@ function assist.assistRoutine()
         if mq.TLO.Target() and not mq.TLO.Target.Mezzed() and mq.TLO.Target.PctHPs() <= gui.assistPercent and mq.TLO.Target.Distance() <= gui.assistRange then
             mq.cmd("/squelch /attack on")
             mq.delay(100)
-            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
-                mq.cmd("/squelch /pet attack")
-            end
         elseif mq.TLO.Target() and (mq.TLO.Target.Mezzed() or mq.TLO.Target.PctHPs() > gui.assistPercent or mq.TLO.Target.Distance() > (gui.assistRange + 30)) then
             mq.cmd("/squelch /attack off")
             mq.delay(100)
-            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
-                mq.cmd("/squelch /pet back")
-            end
         end
     end
 
-    if mq.TLO.Me.CombatState() == "COMBAT" and mq.TLO.Target() and mq.TLO.Target.Dead() ~= ("true" or "nil") then
+    while mq.TLO.Me.CombatState() == "COMBAT" and mq.TLO.Target() and not mq.TLO.Target.Dead() do
+        debugPrint("Combat state: ", mq.TLO.Me.CombatState())
 
-        if mq.TLO.Target() and not mq.TLO.Target.Mezzed() and mq.TLO.Target.PctHPs() <= gui.assistPercent and mq.TLO.Target.Distance() <= gui.assistRange then
-            mq.cmd("/squelch /attack on")
-            mq.delay(100)
-            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
-                mq.cmd("/squelch /pet attack")
-            end
-        elseif mq.TLO.Target() and (mq.TLO.Target.Mezzed() or mq.TLO.Target.PctHPs() > gui.assistPercent or mq.TLO.Target.Distance() > (gui.assistRange + 30)) then
-            mq.cmd("/squelch /attack off")
-            mq.delay(100)
-            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
-                mq.cmd("/squelch /pet back")
-            end
+        if not mq.TLO.Target() or mq.TLO.Target() and (mq.TLO.Target.Dead() or mq.TLO.Target.PctHPs() < 0) then
+            debugPrint("Target is dead. Exiting combat loop.")
+            break
         end
 
-        local feignName = spells.findBestSpell("FeignDeath", charLevel)
-        if gui.feignDeath then
-            if mq.TLO.Target() and gui.feignDeath and charLevel >= 24 and mq.TLO.Me.PctAggro() >= 80 and mq.TLO.Target.Distance() <= gui.assistRange and hasEnoughMana(feignName) and mq.TLO.Me.SpellReady(10)() then
-                mq.cmd('/stick off')
-                mq.delay(100)
-                mq.cmd("/cast 10")
-                mq.delay(100)
+        if mq.TLO.Target() and mq.TLO.Target.Distance() <= gui.assistRange and mq.TLO.Target.LineOfSight() and not mq.TLO.Me.Combat() then
+            debugPrint("Starting attack on target:", mq.TLO.Target.CleanName())
+            mq.cmd("/squelch /attack on")
+            mq.delay(100)
+        end
 
+        if mq.TLO.Target() and not utils.FacingTarget() and not mq.TLO.Target.Dead() and mq.TLO.Target.LineOfSight() then
+            debugPrint("Facing target:", mq.TLO.Target.CleanName())
+            mq.cmd("/squelch /face id " .. mq.TLO.Target.ID())
+            mq.delay(100)
+        end
+
+        if mq.TLO.Target() and mq.TLO.Target.Distance() <= gui.assistRange and mq.TLO.Target.LineOfSight() then
+
+            if mq.TLO.Target() and  mq.TLO.Target.Distance() < lowerBound then
+                debugPrint("Target too close; moving back.")
+                mq.cmdf("/stick moveback %s", stickDistance)
+                mq.delay(100)
+            end
+
+            if mq.TLO.Target() and mq.TLO.Me.AbilityReady("Bash")() and mq.TLO.Me.Secondary() ~= "0" then
+                debugPrint("Using Bash ability.")
+                mq.cmd("/doability Bash")
+                mq.delay(100)
+            elseif mq.TLO.Target() and mq.TLO.Me.AbilityReady("Slam")() and mq.TLO.Me.Secondary() == "0" and mq.TLO.Me.Race() == "Ogre" then
+                debugPrint("Using Slam ability.")
+                mq.cmd("/doability Slam")
+                mq.delay(100)
+            end
+
+            local spellsToCast = {
+                {name = "LifeTap", spell = spells.findBestSpell("LifeTap", charLevel), slot = 1, cond = charLevel >= 8 and mq.TLO.Me.PctHPs() < 50},
+                {name = "Snare", spell = spells.findBestSpell("Snare", charLevel), slot = 2, cond = charLevel >= 11 and mq.TLO.Target() and (mq.TLO.Target.PctHPs() or 0) < 50 and (mq.TLO.Target.Fleeing() or (mq.TLO.Me.PctAggro() or 100) < 100) and not mq.TLO.Target.Snared()},
+                {name = "FireDot", spell = spells.findBestSpell("FireDot", charLevel), slot = 4, cond = charLevel >= 5 and mq.TLO.Target.Named()},
+                {name = "DiseaseDoT", spell = spells.findBestSpell("DiseaseDoT", charLevel), slot = 5, cond = charLevel >= 28 and mq.TLO.Target.Named()}
+            }
+
+            for _, spellInfo in ipairs(spellsToCast) do
+                local spellName, spell, slot, condition = spellInfo.name, spellInfo.spell, spellInfo.slot, spellInfo.cond
+                if mq.TLO.Target() and spell and condition and mq.TLO.Me.SpellReady(slot)() and hasEnoughMana(spell) and inRange(spell) and not currentlyActive(spell) then
+                    mq.cmdf("/squelch /stick off")
+                    mq.delay(100)
+                    debugPrint("Casting spell:", spellName, "on slot", slot)
+                    mq.cmdf("/cast %d", slot)
+                    mq.delay(100)
+                end
                 while mq.TLO.Me.Casting() do
                     mq.delay(10)
                 end
-
-                while mq.TLO.Target() and mq.TLO.Me.PctAggro() > 80 and mq.TLO.Target.AggroHolder() do
-                    mq.delay(10)
-                    if mq.TLO.Target() and mq.TLO.Me.PctAggro() < 80 then
-                        mq.cmd("/stand")
-                        mq.delay(100)
-                        if gui.stickFront then
-                            mq.cmdf("/stick front %d uw", gui.stickDistance)
-                        elseif gui.stickBehind then
-                            mq.cmdf("/stick behind %d uw", gui.stickDistance)
-                        end
-                        mq.delay(100)
-                        mq.cmd("/attack on")
-                        mq.delay(100)
-                        if mq.TLO.Target() and gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
-                            mq.cmd("/squelch /pet attack")
-                        end
-                    end
-                end
             end
-        end
 
-        if mq.TLO.Target() and mq.TLO.Me.PctHPs() < 50 and mq.TLO.Me.SpellReady(1) and charLevel >= 8 then
-            mq.cmd('/stick off')
+        elseif mq.TLO.Target() and mq.TLO.Target.Distance() > upperBound and mq.TLO.Target.LineOfSight() then
+            debugPrint("Target too far; moving closer.")
+            mq.cmdf("/squelch /stick front %d uw", stickDistance)
             mq.delay(100)
-            mq.cmd('/cast 1')
+        elseif mq.TLO.Target() and mq.TLO.Target.Distance() > (upperBound + 100) and not mq.TLO.Target.LineOfSight() then
+        debugPrint("Target out of range and line of sight; ending combat.")
+        if mq.TLO.Me.Combat() then
+            mq.cmd("/squelch /attack off")
             mq.delay(100)
-
-            while mq.TLO.Me.Casting() do
-                mq.delay(10)
-            end
-
-            if gui.stickFront then
-                mq.cmdf("/stick front %d uw", gui.stickDistance)
-            elseif gui.stickBehind then
-                mq.cmdf("/stick behind %d uw", gui.stickDistance)
-            end
         end
-
-        local tapName = spells.findBestSpell("LifeTap", charLevel)
-        local snareName = spells.findBestSpell("Snare", charLevel)
-        local fireName = spells.findBestSpell("FireDot", charLevel)
-        local diseaseName = spells.findBestSpell("DiseaseDoT", charLevel)
-
-        if mq.TLO.Me.SpellReady(1)() and charLevel >= 8 and mq.TLO.Me.PctHPs() < 50 and hasEnoughMana(tapName) then
-            mq.cmd("/cast 1")
-        elseif mq.TLO.Me.SpellReady(2)() and charLevel >= 11 and mq.TLO.Target.PctHPs() < 50 and (mq.TLO.Target.Fleeing() or mq.TLO.Me.PctAggro() < 100) and not mq.TLO.Target.Snared() and mq.TLO.Me.PctMana() > 10 and hasEnoughMana(snareName) then
-            mq.cmd("/cast 2")
-        elseif mq.TLO.Me.SpellReady(4)() and charLevel >= 5 and mq.TLO.Target.Named() and mq.TLO.Me.PctMana() > 30 and hasEnoughMana(fireName) then
-            mq.cmd("/cast 4")
-        elseif mq.TLO.Me.SpellReady(5)() and charLevel >= 28 and mq.TLO.Target.Named() and mq.TLO.Me.PctMana() > 30 and hasEnoughMana(diseaseName) then
-            mq.cmd("/cast 5")
-        end
-
-        if mq.TLO.Target() and mq.TLO.Target.Distance() <= gui.assistRange then
-            local bash = "Bash"
-            local slam = "Slam"
-
-            if mq.TLO.Target() and mq.TLO.Me.AbilityReady(bash) and mq.TLO.Me.Secondary() ~= "0"  then
-                mq.cmdf('/doability %s', bash)
-            elseif mq.TLO.Target() and mq.TLO.Me.AbilityReady(slam) and mq.TLO.Me.Secondary() == "0" and mq.TLO.Me.Race() == "Ogre"  then
-                mq.cmdf('/doability %s', slam)
+        if gui.returnToCamp and nav.campLocation then
+            debugPrint("Returning to camp location.")
+            mq.cmd("/stick off")
+            mq.delay(100)
+            mq.cmdf("/nav loc %f %f %f", nav.campLocation.y, nav.campLocation.x, nav.campLocation.z or 0)
+            mq.delay(100)
+            while mq.TLO.Navigation.Active() do
+                mq.delay(50)
             end
         end
-
-        if mq.TLO.Target() and mq.TLO.Stick() == "ON" then
-            local stickDistance = gui.stickDistance
-            local lowerBound = stickDistance * 0.9
-            local upperBound = stickDistance * 1.1
-            local targetDistance = mq.TLO.Target.Distance()
-
-            if targetDistance > upperBound then
-                mq.cmdf("/stick moveback %s", stickDistance)
-                mq.delay(100)
-            elseif targetDistance < lowerBound then
-                mq.cmdf("/stick moveback %s", stickDistance)
-                mq.delay(100)
-            end
+            mq.delay(100)
         end
 
-    mq.delay(50)
+        mq.delay(100)
     end
 end
 
