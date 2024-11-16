@@ -54,6 +54,9 @@ local spells = {
     FeignDeath = {
         {level = 60, name = "Death Peace"},
         {level = 24, name = "Feign Death"}
+    },
+    HPBuff = {
+        {level = 60, name = "Cloak of Trakanon"}
     }
 }
 

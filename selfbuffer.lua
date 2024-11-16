@@ -48,6 +48,9 @@ function selfbuffer.buffRoutine()
     if gui.buffsOn and charLevel >= 16 then
         table.insert(spellTypes, "AtkBuff")
     end
+    if gui.buffsOn and charLevel >= 60 then
+        table.insert(spellTypes, "HPBuff")
+    end
 
     -- Process each spell type for self-buffing only
     for _, spellType in ipairs(spellTypes) do
