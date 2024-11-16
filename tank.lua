@@ -84,8 +84,8 @@ local function currentlyActive(spell)
 end
 
 function tank.tankRoutine()
-    if not gui.botOn and not gui.tankMelee then
-        debugPrint("Bot or melee mode is off; exiting tankRoutine.")
+    if not gui.botOn and not gui.tankOn then
+        debugPrint("Bot and tank mode is off; exiting tankRoutine.")
         return
     end
 
@@ -102,17 +102,16 @@ function tank.tankRoutine()
         end
 
         if #mobsInRange == 0 then
-            mq.cmd("/squelch /attack off") -- Stop attacking if no more targets
-            mq.delay(100)
-            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
-                mq.cmd("/squelch /pet back")
-                mq.delay(100)
-            end
-            return
-        end
+            debugPrint("No mobs in range.")
 
-        if #mobsInRange == 0 then
-            debugPrint("No mobs in range. Exiting tankRoutine.")
+            if gui.travelTank then
+                if mq.TLO.Navigation.Paused() then
+                    debugPrint("Resuming navigation.")
+                    mq.cmd("/squelch /nav pause")
+                    mq.delay(100)
+                end
+            end
+
             if mq.TLO.Me.Combat() then
                 debugPrint("Exiting combat mode.")
                 mq.cmd("/squelch /attack off")
@@ -122,10 +121,12 @@ function tank.tankRoutine()
                     mq.cmd("/squelch /pet back")
                     mq.delay(100)
                 end
+                return
             end
-            debugPrint("Stopping stick and navigation.")
+        
             return
         end
+        
 
         local target = table.remove(mobsInRange, 1)
         debugPrint("Target:", target)
@@ -136,17 +137,28 @@ function tank.tankRoutine()
             debugPrint("Target set to:", target.CleanName())
         end
 
-        if mq.TLO.Target() and mq.TLO.Stick.Active() == false and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
+        if mq.TLO.Target() and not mq.TLO.Stick.Active() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
             debugPrint("Not stuck to target; initiating stick command.")
-            if mq.TLO.Navigation.Active() then
-                mq.cmd('/nav stop')
-                mq.delay(100)
+            
+            -- Stop or pause navigation depending on the travelTank setting
+            if mq.TLO.Navigation.Active() and not mq.TLO.Navigation.Paused() then
+                if not gui.travelTank then
+                    debugPrint("Stopping navigation.")
+                    mq.cmd('/nav stop')
+                else
+                    debugPrint("Pausing navigation.")
+                    mq.cmd('/nav pause')
+                end
+                mq.delay(100, function() return not mq.TLO.Navigation.Active() end)
             end
-            mq.cmdf("/stick front %d uw", stickDistance)
-            mq.delay(100)
-        end
 
-        if target and not mq.TLO.Me.Combat() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
+            debugPrint("Stick distance:", stickDistance)
+            mq.cmdf("/stick front %d uw", stickDistance)
+            mq.delay(100, function() return mq.TLO.Stick.Active() end)
+        end
+        
+
+        if mq.TLO.Target() and not mq.TLO.Me.Combat() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
             debugPrint("Starting attack on target:", mq.TLO.Target.CleanName())
             mq.cmd("/squelch /attack on")
             mq.delay(100)
@@ -158,8 +170,13 @@ function tank.tankRoutine()
         end
         debugPrint("Combat state: ", mq.TLO.Me.CombatState())
 
-        while mq.TLO.Me.CombatState() == "COMBAT" and target and mq.TLO.Target.ID() == mq.TLO.Target.ID() and not mq.TLO.Target.Dead() do
+        while mq.TLO.Me.CombatState() == "COMBAT" and target and target == mq.TLO.Target.ID() and not mq.TLO.Target.Dead() do
             debugPrint("Combat state: ", mq.TLO.Me.CombatState())
+
+            if not gui.botOn and not gui.tankOn then
+                debugPrint("Bot or melee mode is off; exiting combat loop.")
+                return
+            end
 
             if mq.TLO.Target() and target and (mq.TLO.Target.ID() ~= target.ID or mq.TLO.Target.Dead() == true or (mq.TLO.Target.PctHPs() ~= nil and mq.TLO.Target.PctHPs() < 0)) then
                 mq.cmdf("/target id %d", target.ID())

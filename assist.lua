@@ -109,6 +109,9 @@ function assist.assistRoutine()
 
     while mq.TLO.Me.CombatState() == "COMBAT" and mq.TLO.Target() and not mq.TLO.Target.Dead() do
         debugPrint("Combat state: ", mq.TLO.Me.CombatState())
+        if not gui.botOn and not gui.assistMelee then
+            return
+        end
 
         if not mq.TLO.Target() or mq.TLO.Target() and (mq.TLO.Target.Dead() or mq.TLO.Target.PctHPs() < 0) then
             debugPrint("Target is dead. Exiting combat loop.")

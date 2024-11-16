@@ -68,7 +68,7 @@ while gui.controlGUI do
             utils.sitMed()
         end
 
-        if gui.tankMelee then
+        if gui.tankOn then
             tank.tankRoutine()
         elseif gui.assistMelee then
             assist.assistRoutine()

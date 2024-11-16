@@ -27,12 +27,13 @@ local function setDefaultConfig()
     gui.chaseOn = false
     gui.chaseTarget = ""
     gui.chaseDistance = 20
-    gui.tankMelee = false
+    gui.tankOn = false
     gui.usePet = false
     gui.buffsOn = false
     gui.feignDeath = false
     gui.tankRange = 50
     gui.sitMed = false
+    gui.travelTank = false
 end
 
 function gui.getPullDistanceXY()
@@ -91,8 +92,8 @@ local function controlGUI()
     ImGui.Spacing()
 
     -- Tank Checkbox
-    gui.tankMelee = ImGui.Checkbox("Tank", gui.tankMelee or false)
-    if gui.tankMelee then
+    gui.tankOn = ImGui.Checkbox("Tank", gui.tankOn or false)
+    if gui.tankOn then
         gui.assistMelee = false
     end
 
@@ -101,12 +102,12 @@ local function controlGUI()
     -- Assist Checkbox
     gui.assistMelee = ImGui.Checkbox("Assist", gui.assistMelee or false)
     if gui.assistMelee then
-        gui.tankMelee = false
+        gui.tankOn = false
     end
 
     ImGui.Spacing()
 
-    if gui.tankMelee then
+    if gui.tankOn then
         ImGui.Spacing()
 
         ImGui.SetNextItemWidth(100)
@@ -119,6 +120,11 @@ local function controlGUI()
             previousTankRange = gui.tankRange
         end
 
+        gui.travelTank = ImGui.Checkbox("Travel Tank", gui.travelTank or false)
+        if gui.travelTank then
+            gui.returnToCamp = false
+            gui.chaseOn = false
+        end
 
         ImGui.Spacing()
 

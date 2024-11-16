@@ -22,6 +22,7 @@ end
 -- Function to handle the heal routine and return
 local function handleTankRoutineAndReturn()
     tank.tankRoutine()
+    utils.monitorNav()
     return true
 end
 
