@@ -131,15 +131,15 @@ function tank.tankRoutine()
         local target = table.remove(mobsInRange, 1)
         debugPrint("Target:", target)
 
-        if target and target.Distance() <= gui.tankRange and (not mq.TLO.Target() or mq.TLO.Target.ID() ~= target.ID()) and target.LineOfSight() then
+        if target and target.Distance() ~= nil and target.Distance() <= gui.tankRange and (not mq.TLO.Target() or mq.TLO.Target.ID() ~= target.ID()) and target.LineOfSight() then
             mq.cmdf("/target id %d", target.ID())
             mq.delay(200)
             debugPrint("Target set to:", target.CleanName())
         end
 
-        if mq.TLO.Target() and not mq.TLO.Stick.Active() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
-            debugPrint("Not stuck to target; initiating stick command.")
-            
+        if mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() and not mq.TLO.Stick.Active() then
+         debugPrint("Not stuck to target; initiating stick command.")
+
             -- Stop or pause navigation depending on the travelTank setting
             if mq.TLO.Navigation.Active() and not mq.TLO.Navigation.Paused() then
                 if not gui.travelTank then
@@ -158,7 +158,7 @@ function tank.tankRoutine()
         end
         
 
-        if mq.TLO.Target() and not mq.TLO.Me.Combat() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
+        if mq.TLO.Target() and not mq.TLO.Me.Combat() and mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
             debugPrint("Starting attack on target:", mq.TLO.Target.CleanName())
             mq.cmd("/squelch /attack on")
             mq.delay(100)
@@ -187,7 +187,7 @@ function tank.tankRoutine()
                 break
             end
 
-            if mq.TLO.Target() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() and not mq.TLO.Me.Combat() then
+            if mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and  mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() and not mq.TLO.Me.Combat() then
                 debugPrint("Starting attack on target:", mq.TLO.Target.CleanName())
                 mq.cmd("/squelch /attack on")
                 mq.delay(100)
@@ -198,7 +198,7 @@ function tank.tankRoutine()
                 end
             end
 
-            if mq.TLO.Me.PctAggro() < 100 then
+            if mq.TLO.Target() and mq.TLO.Me.PctAggro() < 100 then
                 if nav.campLocation then
                     local playerX, playerY = mq.TLO.Me.X(), mq.TLO.Me.Y()
                     local campX = tonumber(nav.campLocation.x) or 0
@@ -227,31 +227,31 @@ function tank.tankRoutine()
                 end
             end
 
-            if not utils.FacingTarget() and not mq.TLO.Target.Dead() and mq.TLO.Target.LineOfSight() then
+            if mq.TLO.Target() and not utils.FacingTarget() and not mq.TLO.Target.Dead() and mq.TLO.Target.LineOfSight() then
                 debugPrint("Facing target:", mq.TLO.Target.CleanName())
                 mq.cmd("/squelch /face id " .. mq.TLO.Target.ID())
                 mq.delay(100)
             end
 
-            if mq.TLO.Target() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
+            if mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
 
-                if mq.TLO.Target.Distance() < lowerBound then
+                if mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() < lowerBound then
                     debugPrint("Target too close; moving back.")
                     mq.cmdf("/stick moveback %s", stickDistance)
                     mq.delay(100)
                 end
 
-                if mq.TLO.Me.AbilityReady("Taunt")() and mq.TLO.Me.PctAggro() < 100 then
+                if mq.TLO.Target() and mq.TLO.Me.AbilityReady("Taunt")() and mq.TLO.Me.PctAggro() < 100 then
                     debugPrint("Using Taunt ability.")
                     mq.cmd("/doability Taunt")
                     mq.delay(100)
                 end
 
-                if mq.TLO.Me.AbilityReady("Bash")() and mq.TLO.Me.Secondary() ~= "0" then
+                if mq.TLO.Target() and mq.TLO.Me.AbilityReady("Bash")() and mq.TLO.Me.Secondary() ~= "0" then
                     debugPrint("Using Bash ability.")
                     mq.cmd("/doability Bash")
                     mq.delay(100)
-                elseif mq.TLO.Me.AbilityReady("Slam")() and mq.TLO.Me.Secondary() == "0" and mq.TLO.Me.Race() == "Ogre" then
+                elseif mq.TLO.Target() and mq.TLO.Me.AbilityReady("Slam")() and mq.TLO.Me.Secondary() == "0" and mq.TLO.Me.Race() == "Ogre" then
                     debugPrint("Using Slam ability.")
                     mq.cmd("/doability Slam")
                     mq.delay(100)
@@ -267,7 +267,7 @@ function tank.tankRoutine()
 
                 for _, spellInfo in ipairs(spellsToCast) do
                     local spellName, spell, slot, condition = spellInfo.name, spellInfo.spell, spellInfo.slot, spellInfo.cond
-                    if spell and condition and mq.TLO.Me.SpellReady(slot)() and hasEnoughMana(spell) and inRange(spell) and not currentlyActive(spell) then
+                    if mq.TLO.Target() and spell and condition and mq.TLO.Me.SpellReady(slot)() and hasEnoughMana(spell) and inRange(spell) and not currentlyActive(spell) then
                         mq.cmdf("/squelch /stick off")
                         mq.delay(100)
                         debugPrint("Casting spell:", spellName, "on slot", slot)
@@ -279,11 +279,11 @@ function tank.tankRoutine()
                     end
                 end
 
-            elseif mq.TLO.Target() and mq.TLO.Target.Distance() > upperBound and mq.TLO.Target.LineOfSight() then
+            elseif mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() > upperBound and mq.TLO.Target.LineOfSight() then
                 debugPrint("Target too far; moving closer.")
                 mq.cmdf("/squelch /stick front %d uw", stickDistance)
                 mq.delay(100)
-            elseif mq.TLO.Target() and mq.TLO.Target.Distance() > (upperBound + 100) and not mq.TLO.Target.LineOfSight() then
+            elseif mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() > (upperBound + 100) and not mq.TLO.Target.LineOfSight() then
             debugPrint("Target out of range and line of sight; ending combat.")
             if mq.TLO.Me.Combat() then
                 mq.cmd("/squelch /attack off")
