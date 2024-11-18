@@ -21,12 +21,6 @@ These commands control general bot functionality, allowing you to start, stop, o
 
 ---
 
-### Set Assist Parameters
-- Command: `/ConvSHD Assist <name> <range> <percent>`
-- Description: Sets the main assist name, assist range, and assist health percentage.
-
----
-
 ## Camp and Navigation
 These commands control camping behavior and movement options.
 
@@ -46,17 +40,21 @@ These commands control camping behavior and movement options.
 ## Combat and Assist Commands
 These commands control combat behaviors, including melee assistance and target positioning.
 
-### Set Assist Melee
-- Command: `/ConvSHD AssistMelee on/off`
-- Description: Enables or disables melee assistance.
+### Set Assist Mode
+- Command: `/ConvSHD Assist on/off` or `/ConvSHD Assist <range> <percent>`
+- Description: Toggles assist mode on or off, or configures assist mode with a specified range and health percentage threshold.
+- Examples:
+  - `/ConvSHD Assist on`: Enables assist mode.
+  - `/ConvSHD Assist off`: Disables assist mode.
+  - `/ConvSHD Assist 50 75`: Sets assist range to 50 and assist health threshold to 75%.
 
-### Set Tank Melee
-- Command: `/ConvSHD TankMelee on/off`
-- Description: Enables or disables tank melee mode, which is incompatible with assist melee.
-
-### Set Use Pet
-- Command: `/ConvSHD Pet on/off`
-- Description: Toggles pet usage.
+### Set Tank Mode
+- Command: `/ConvSHD Tank on/off` or `/ConvSHD TankRange <range>`
+- Description: Toggles tank mode on or off, or defines the tank's engagement range.
+- Examples:
+  - `/ConvSHD Tank on`: Enables tank mode.
+  - `/ConvSHD Tank off`: Disables tank mode.
+  - `/ConvSHD TankRange 30`: Sets the tank range to 30.
 
 ### Set Buffs On
 - Command: `/ConvSHD BuffsOn on/off`
@@ -65,10 +63,6 @@ These commands control combat behaviors, including melee assistance and target p
 ### Toggle Feign Death
 - Command: `/ConvSHD FeignDeath on/off`
 - Description: Enables or disables feign death functionality.
-
-### Set Tank Range
-- Command: `/ConvSHD Tank <range>`
-- Description: Defines the tank's engagement range.
 
 ### Toggle Sit to Meditate
 - Command: `/ConvSHD SitMed on/off`
