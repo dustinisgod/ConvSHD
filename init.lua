@@ -26,6 +26,7 @@ end
 mq.imgui.init('controlGUI', gui.controlGUI)
 
 commands.init()
+commands.initALL()
 
 spells.startup(currentLevel)
 
