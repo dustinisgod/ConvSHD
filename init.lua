@@ -71,7 +71,7 @@ while gui.controlGUI do
 
         if gui.tankOn then
             tank.tankRoutine()
-        elseif gui.assistMelee then
+        elseif gui.assistOn then
             assist.assistRoutine()
         end
 

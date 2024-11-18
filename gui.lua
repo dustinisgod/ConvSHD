@@ -17,7 +17,7 @@ local function setDefaultConfig()
     gui.mainAssist = ""
     gui.assistRange = 40
     gui.assistPercent = 95
-    gui.assistMelee = true
+    gui.assistOn = true
     gui.stickFront = false
     gui.stickBehind = true
     gui.stickDistance = 15
@@ -94,14 +94,14 @@ local function controlGUI()
     -- Tank Checkbox
     gui.tankOn = ImGui.Checkbox("Tank", gui.tankOn or false)
     if gui.tankOn then
-        gui.assistMelee = false
+        gui.assistOn = false
     end
 
     ImGui.SameLine()
 
     -- Assist Checkbox
-    gui.assistMelee = ImGui.Checkbox("Assist", gui.assistMelee or false)
-    if gui.assistMelee then
+    gui.assistOn = ImGui.Checkbox("Assist", gui.assistOn or false)
+    if gui.assistOn then
         gui.tankOn = false
     end
 
@@ -177,7 +177,7 @@ local function controlGUI()
         end
     end
 
-    if gui.assistMelee then
+    if gui.assistOn then
         if ImGui.CollapsingHeader("Assist Settings") then
             ImGui.Spacing()
             ImGui.SetNextItemWidth(100)
@@ -214,8 +214,8 @@ local function controlGUI()
                 ImGui.Separator()
                 ImGui.Spacing()
 
-                gui.assistMelee = ImGui.Checkbox("Melee", gui.assistMelee or false)
-                if gui.assistMelee then
+                gui.assistOn = ImGui.Checkbox("Melee", gui.assistOn or false)
+                if gui.assistOn then
 
                     ImGui.Spacing()
 

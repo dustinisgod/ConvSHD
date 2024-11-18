@@ -135,14 +135,14 @@ end
 local function setMeleeOptions(meleeOption, stickOption, stickDistance)
     -- Set Assist Melee on or off based on the first argument
     if meleeOption == "on" then
-        gui.assistMelee = true
+        gui.assistOn = true
         print("Assist Melee is now enabled")
     elseif meleeOption == "off" then
-        gui.assistMelee = false
+        gui.assistOn = false
         print("Assist Melee is now disabled")
     elseif meleeOption == "front" or meleeOption == "behind" then
         -- Set Stick position based on 'front' or 'behind' and optionally set distance
-        gui.assistMelee = true
+        gui.assistOn = true
         if meleeOption == "front" then
             gui.stickFront = true
             gui.stickBehind = false
@@ -191,36 +191,48 @@ local function setTankIgnore(scope, action)
     end
 end
 
--- New functions
-local function setTankMelee(value)
-    if value == "on" then
-        if gui.assistMelee then
-            print("Error: assistMelee and tankMelee cannot be enabled simultaneously.")
-            return
+local function setTankorAssist(command, mode, value, optionalArg)
+    if command == "tank" or command == "assist" then
+        -- Handle enabling/disabling melee for tank or assist
+        if value == "on" then
+            if command == "tank" then
+                gui.tankOn = true
+                gui.assistOn = false
+                print("Tank Melee is now enabled.")
+            elseif command == "assist" then
+                gui.assistOn = true
+                gui.tankOn = false
+                print("Assist Melee is now enabled.")
+            end
+        elseif value == "off" then
+            if command == "tank" then
+                gui.tankOn = false
+                print("Tank Melee is now disabled.")
+            elseif command == "assist" then
+                gui.assistOn = false
+                print("Assist Melee is now disabled.")
+            end
+        elseif command == "assist" and tonumber(optionalArg) then
+            gui.assistPercent = tonumber(optionalArg)
+            print(string.format("Assist Percent is now set to %d%%.", gui.assistPercent))
+        else
+            print("Usage: /convSHD " .. command .. " on/off or /convSHD assist gui.assistRange [assistPercent]")
         end
-        gui.tankMelee = true
-        print("Tank Melee is now enabled.")
-    elseif value == "off" then
-        gui.tankMelee = false
-        print("Tank Melee is now disabled.")
-    else
-        print("Usage: /convSHD tankmelee on/off")
-    end
-end
-
-local function setAssistMelee(value)
-    if value == "on" then
-        if gui.tankMelee then
-            print("Error: tankMelee and assistMelee cannot be enabled simultaneously.")
-            return
+    elseif command == "tankrange" or command == "assistrange" then
+        -- Handle range adjustments
+        if tonumber(value) then
+            if command == "assistrange" then
+                gui.assistRange = tonumber(value)
+                print(string.format("Assist Range is now set to %d.", gui.assistRange))
+            elseif command == "tankrange" then
+                gui.tankRange = tonumber(value)
+                print(string.format("Tank Range is now set to %d.", gui.tankRange))
+            end
+        else
+            print(string.format("Usage: /convSHD %s [range_value]", command))
         end
-        gui.assistMelee = true
-        print("Assist Melee is now enabled.")
-    elseif value == "off" then
-        gui.assistMelee = false
-        print("Assist Melee is now disabled.")
     else
-        print("Usage: /convSHD assistmelee on/off")
+        print("Usage: /convSHD tank/assist on/off or /convSHD tankrange/assistrange [range_value] or /convSHD assist [range] [percent]")
     end
 end
 
@@ -234,10 +246,6 @@ end
 
 local function setFeignDeath(value)
     setToggleOption("feignDeath", value, "Feign Death")
-end
-
-local function setTankRange(value)
-    setNumericOption("tankRange", value, "Tank Range")
 end
 
 -- Main command handler
@@ -255,18 +263,21 @@ local function commandHandler(command, ...)
         setBotOnOff(args[1])
     elseif command == "save" then
         setSave()
-    elseif command == "assistmelee" then
-        setAssistMelee(args[1])
-    elseif command == "tankmelee" then
-        setTankMelee(args[1])
     elseif command == "pet" then
         setUsePet(args[1])
     elseif command == "buffson" then
         setBuffsOn(args[1])
     elseif command == "feigndeath" then
         setFeignDeath(args[1])
-    elseif command == "tank" then
-        setTankRange(args[1])
+    elseif command == "tank" or command == "assist" or command == "tankrange" or command == "assistrange" then
+        if args[1] then
+            -- If the command is 'assist', check for an optional third argument
+            if command == "assist" and args[2] then
+                setTankorAssist(command, nil, args[1], args[2]) -- Pass the command, mode, value, and the optional assistPercent
+            else
+                setTankorAssist(command, nil, args[1]) -- Pass the command, mode, and value only
+            end
+        end
     elseif command == "sitmed" then
         setSitMedOnOff(args[1])
     elseif command == "melee" then

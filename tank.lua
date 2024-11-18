@@ -235,12 +235,6 @@ function tank.tankRoutine()
 
             if mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
 
-                if mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() < lowerBound then
-                    debugPrint("Target too close; moving back.")
-                    mq.cmdf("/stick moveback %s", stickDistance)
-                    mq.delay(100)
-                end
-
                 if mq.TLO.Target() and mq.TLO.Me.AbilityReady("Taunt")() and mq.TLO.Me.PctAggro() < 100 then
                     debugPrint("Using Taunt ability.")
                     mq.cmd("/doability Taunt")
@@ -278,38 +272,36 @@ function tank.tankRoutine()
                         mq.delay(10)
                     end
                 end
-
-            elseif mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() > upperBound and mq.TLO.Target.LineOfSight() then
-                debugPrint("Target too far; moving closer.")
-                mq.cmdf("/squelch /stick front %d uw", stickDistance)
-                mq.delay(100)
-            elseif mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() > (upperBound + 100) and not mq.TLO.Target.LineOfSight() then
-            debugPrint("Target out of range and line of sight; ending combat.")
-            if mq.TLO.Me.Combat() then
-                mq.cmd("/squelch /attack off")
-                mq.delay(100)
-                if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and mq.TLO.Me.Pet.Combat() then
-                    mq.cmd("/squelch /pet back")
-                    mq.delay(100)
-                end
-            end
-            if gui.returnToCamp and nav.campLocation then
-                debugPrint("Returning to camp location.")
-                mq.cmd("/stick off")
-                mq.delay(100)
-                mq.cmdf("/nav loc %f %f %f", nav.campLocation.y, nav.campLocation.x, nav.campLocation.z or 0)
-                mq.delay(100)
-                while mq.TLO.Navigation.Active() do
-                    mq.delay(50)
-                end
-            end
-                mq.delay(100)
             end
 
-            mq.delay(100)
+            local lastStickDistance = nil
+
+            if mq.TLO.Target() and mq.TLO.Stick() == "ON" then
+                local stickDistance = gui.stickDistance -- current GUI stick distance
+                local lowerBound = stickDistance * 0.9
+                local upperBound = stickDistance * 1.1
+                local targetDistance = mq.TLO.Target.Distance()
+                
+                -- Check if stickDistance has changed
+                if lastStickDistance ~= stickDistance then
+                    lastStickDistance = stickDistance
+                    mq.cmdf("/squelch /stick moveback %s", stickDistance)
+                end
+        
+                -- Check if the target distance is out of bounds and adjust as necessary
+                if mq.TLO.Target.ID() then
+                    if targetDistance > upperBound then
+                        mq.cmdf("/squelch /stick moveback %s", stickDistance)
+                        mq.delay(100)
+                    elseif targetDistance < lowerBound then
+                        mq.cmdf("/squelch /stick moveback %s", stickDistance)
+                        mq.delay(100)
+                    end
+                end
+            end
+
+            mq.delay(50)
         end
-        debugPrint("Exiting combat loop.")
-        mq.delay(100)
     end
 end
 
