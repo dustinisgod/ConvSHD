@@ -4,6 +4,14 @@ local utils = require('utils')
 local gui = require('gui')
 local tank = require('tank')
 
+local DEBUG_MODE = false
+-- Debug print helper function
+local function debugPrint(...)
+    if DEBUG_MODE then
+        print(...)
+    end
+end
+
 local selfbuffer = {}
 selfbuffer.buffQueue = {}
 
@@ -11,16 +19,19 @@ local charLevel = mq.TLO.Me.Level()
 
 -- Helper function: Pre-cast checks for combat, movement, and casting status
 local function preCastChecks()
+    debugPrint("Checking pre-cast conditions")
     return not (mq.TLO.Me.Moving() or mq.TLO.Me.Combat() or mq.TLO.Me.Casting())
 end
 
 -- Helper function: Check if we have enough mana to cast the spell
 local function hasEnoughMana(spellName)
+    debugPrint("Checking mana for spell:", spellName)
     return spellName and mq.TLO.Me.CurrentMana() >= mq.TLO.Spell(spellName).Mana()
 end
 
 -- Function to handle the heal routine and return
 local function handleTankRoutineAndReturn()
+    debugPrint("Handling tank routine and return")
     tank.tankRoutine()
     utils.monitorNav()
     return true
@@ -30,10 +41,12 @@ function selfbuffer.buffRoutine()
     if not gui.botOn and gui.buffsOn then return end
 
     if not preCastChecks() then
+        debugPrint("Pre-cast checks failed")
         return
     end
 
     if mq.TLO.Me.PctMana() < 20 then
+        debugPrint("Not enough mana to cast buffs")
         return
     end
 
@@ -41,15 +54,19 @@ function selfbuffer.buffRoutine()
 
     -- Determine which buffs to apply based on the player's level and GUI settings
     if gui.buffsOn and charLevel >= 39 then
+        debugPrint("Adding AggroMultiplier to spellTypes")
         table.insert(spellTypes, "AggroMultiplier")
     end
     if gui.buffsOn and charLevel >= 22 then
+        debugPrint("Adding LifeStealBuff to spellTypes")
         table.insert(spellTypes, "LifeStealBuff")
     end
     if gui.buffsOn and charLevel >= 16 then
+        debugPrint("Adding AtkBuff to spellTypes")
         table.insert(spellTypes, "AtkBuff")
     end
     if gui.buffsOn and charLevel >= 60 then
+        debugPrint("Adding HPBuff to spellTypes")
         table.insert(spellTypes, "HPBuff")
     end
 
@@ -60,6 +77,7 @@ function selfbuffer.buffRoutine()
         local bestSpell = spells.findBestSpell(spellType, charLevel)
         if bestSpell then
             selfbuffer.buffQueue = {}
+                debugPrint("Best spell for", spellType, "is", bestSpell)
 
             -- Define specific slots for each spell type
             local spellSlot
@@ -92,18 +110,22 @@ end
 function selfbuffer.processBuffQueue()
     while #selfbuffer.buffQueue > 0 do
         if not gui.botOn and gui.buffsOn then
+            debugPrint("Bot is off, stopping buff routine")
             return
         end
 
         if not preCastChecks() then
+            debugPrint("Pre-cast checks failed")
             return
         end
 
         if not handleTankRoutineAndReturn() then
+            debugPrint("Tank routine failed")
             return
         end
 
         if mq.TLO.Me.PctMana() < 20 then
+            debugPrint("Not enough mana to cast buffs")
             return
         end
 
@@ -113,35 +135,49 @@ function selfbuffer.processBuffQueue()
 
         -- Target self if casting AggroMultiplier
         if buffTask.spellType == "AggroMultiplier" then
+            debugPrint("Casting AggroMultiplier, targeting self")
             mq.cmd("/target myself")
             mq.delay(100)
         end
 
         -- Ensure spell is ready before proceeding
         while not mq.TLO.Me.SpellReady(buffTask.spell)() and readyAttempt < maxReadyAttempts do
-            if not gui.botOn then return end
+            if not handleTankRoutineAndReturn() then
+                debugPrint("Tank routine failed")
+                return
+            end
+                debugPrint("Spell not ready, waiting...")
+            if not gui.botOn then
+                debugPrint("Bot is off, stopping buff routine")
+                return
+            end
             readyAttempt = readyAttempt + 1
             mq.delay(1000)
         end
 
         if not mq.TLO.Me.SpellReady(buffTask.spell)() then
+            debugPrint("Spell not ready after waiting")
             break
         end
 
         if not hasEnoughMana(buffTask.spell) then
+            debugPrint("Not enough mana to cast", buffTask.spell)
             return
         end
 
         mq.cmdf('/cast %d', buffTask.slot)
+        debugPrint("Casting", buffTask.spell)
         mq.delay(500)  -- Allow time for casting to start
 
         -- Wait for casting to complete, or stop if conditions are met
         while mq.TLO.Me.Casting() do
+            debugPrint("Casting", buffTask.spell)
             mq.delay(50)
         end
 
         -- Reinsert into the queue if the buff was not applied successfully
         if not mq.TLO.Me.Buff(buffTask.spell)() then
+            debugPrint("Failed to apply", buffTask.spell)
             table.insert(selfbuffer.buffQueue, buffTask)
         end
 

@@ -137,7 +137,7 @@ function tank.tankRoutine()
             debugPrint("Target set to:", target.CleanName())
         end
 
-        if mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() and not mq.TLO.Stick.Active() then
+        if mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() ~= nil and mq.TLO.Target.LineOfSight() and not mq.TLO.Stick.Active() then
          debugPrint("Not stuck to target; initiating stick command.")
 
             -- Stop or pause navigation depending on the travelTank setting
