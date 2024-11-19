@@ -23,12 +23,12 @@ local function buildMobQueue(range)
     local globalIgnoreList = utils.tankConfig.globalIgnoreList or {}
 
     local mobs = mq.getFilteredSpawns(function(spawn)
-        local mobName = spawn.CleanName()
-        local isPlayerPet = spawn.Owner.Type() == "PC"
+        local mobName = spawn.CleanName() or ""
+        local isPlayerPet = spawn.Owner() and spawn.Owner.Type() == "PC"
         local isIgnored = ignoreList[mobName] or globalIgnoreList[mobName]
 
         return spawn.Type() == "NPC" and
-               spawn.Distance() <= range and
+               (spawn.Distance() or math.huge) <= range and
                not isPlayerPet and
                not spawn.Dead() and
                spawn.LineOfSight() and
@@ -37,10 +37,15 @@ local function buildMobQueue(range)
 
     -- Sort mobs by priority: named mobs first, then by level (descending)
     table.sort(mobs, function(a, b)
-        if a.Named() ~= b.Named() then
-            return a.Named() -- prioritize named mobs
+        local aNamed = a.Named() or false
+        local bNamed = b.Named() or false
+        local aLevel = a.Level() or 0
+        local bLevel = b.Level() or 0
+
+        if aNamed ~= bNamed then
+            return aNamed -- prioritize named mobs
         else
-            return a.Level() > b.Level() -- then by level, descending
+            return aLevel > bLevel -- then by level, descending
         end
     end)
 
