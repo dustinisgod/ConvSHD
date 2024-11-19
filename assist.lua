@@ -126,7 +126,7 @@ function assist.assistRoutine()
 
         if mq.TLO.Target() and not utils.FacingTarget() and not mq.TLO.Target.Dead() and mq.TLO.Target.LineOfSight() then
             debugPrint("Facing target:", mq.TLO.Target.CleanName())
-            mq.cmd("/squelch /face id " .. mq.TLO.Target.ID())
+            mq.cmd("/squelch /face fast")
             mq.delay(100)
         end
 
