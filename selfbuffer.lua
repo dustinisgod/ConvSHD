@@ -113,6 +113,10 @@ function selfbuffer.processBuffQueue()
             debugPrint("Bot is off, stopping buff routine")
             return
         end
+        if not handleTankRoutineAndReturn() then
+            debugPrint("Tank routine failed")
+            return
+        end
 
         if not preCastChecks() then
             debugPrint("Pre-cast checks failed")

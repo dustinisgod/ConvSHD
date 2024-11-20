@@ -1,9 +1,27 @@
 local mq = require('mq')
 local gui = require('gui')
 local spells = require('spells')
+local utils = require('utils')
+local tank = require('tank')
+
+local DEBUG_MODE = false
+-- Debug print helper function
+local function debugPrint(...)
+    if DEBUG_MODE then
+        print(...)
+    end
+end
 
 local pet = {}
 local charLevel = mq.TLO.Me.Level()
+
+-- Function to handle the heal routine and return
+local function handleTankRoutineAndReturn()
+    debugPrint("Handling tank routine and return")
+    tank.tankRoutine()
+    utils.monitorNav()
+    return true
+end
 
 function pet.petRoutine()
     -- Check if pet usage is enabled in GUI and if the character doesn't have a pet summoned
@@ -22,6 +40,10 @@ function pet.petRoutine()
             local maxReadyAttempts = 20
             local readyAttempt = 0
             while not mq.TLO.Me.SpellReady(petSpellName)() and readyAttempt < maxReadyAttempts do
+                if not handleTankRoutineAndReturn() then
+                    debugPrint("Tank routine failed")
+                    return
+                end
                 if not gui.botOn then return end
                 readyAttempt = readyAttempt + 1
                 mq.delay(1000)
