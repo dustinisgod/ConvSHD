@@ -28,10 +28,6 @@ mq.imgui.init('controlGUI', gui.controlGUI)
 commands.init()
 commands.initALL()
 
-spells.startup(currentLevel)
-
-local startupRun = false
-
 local startupRun = false
 
 -- Function to check the botOn status and run startup once

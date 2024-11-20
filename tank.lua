@@ -90,7 +90,12 @@ end
 
 function tank.tankRoutine()
     if not gui.botOn and not gui.tankOn then
-        debugPrint("Bot and tank mode is off; exiting tankRoutine.")
+        debugPrint("Bot or melee mode is off; exiting combat loop.")
+        mq.cmd("/squelch /attack off")
+        mq.delay(100)
+        mq.cmd("/squelch /stick off")
+        mq.delay(100)
+        mq.cmd("/squelch /nav off")
         return
     end
 
@@ -99,6 +104,17 @@ function tank.tankRoutine()
     local upperBound = stickDistance * 1.1
 
     while true do
+        
+        if not gui.botOn and not gui.tankOn then
+            debugPrint("Bot or melee mode is off; exiting combat loop.")
+            mq.cmd("/squelch /attack off")
+            mq.delay(100)
+            mq.cmd("/squelch /stick off")
+            mq.delay(100)
+            mq.cmd("/squelch /nav off")
+            return
+        end
+
         local nearbyNPCs = mq.TLO.SpawnCount(string.format('npc radius %d los', gui.tankRange))() or 0
         local mobsInRange = {}
 
@@ -185,6 +201,11 @@ function tank.tankRoutine()
 
             if not gui.botOn and not gui.tankOn then
                 debugPrint("Bot or melee mode is off; exiting combat loop.")
+                mq.cmd("/squelch /attack off")
+                mq.delay(100)
+                mq.cmd("/squelch /stick off")
+                mq.delay(100)
+                mq.cmd("/squelch /nav off")
                 return
             end
 

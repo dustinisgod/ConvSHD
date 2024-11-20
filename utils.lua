@@ -291,9 +291,9 @@ function utils.referenceLocation(range)
         local distanceToReference = math.sqrt((referenceLocation.x - mobX)^2 +
                                               (referenceLocation.y - mobY)^2 +
                                               (referenceLocation.z - mobZ)^2)
-        return spawn.Type() == 'NPC' and distanceToReference <= range
+        -- Add Line of Sight (LOS) check
+        return spawn.Type() == 'NPC' and distanceToReference <= range and spawn.LineOfSight()
     end)
-    
 
     return mobsInRange  -- Return the list of mobs in range
 end
