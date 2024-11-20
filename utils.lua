@@ -128,7 +128,7 @@ local selfbuffer = require('selfbuffer')
         -- Check buffs every 5 minutes (300 seconds)
         if gui.buffsOn and (currentTime - lastBuffTime >= 30) then
             debugPrint("Run Buff routine")
-            selfbuffer.buffRoutine()
+            selfbuffer.selfBuffRoutine()
             lastBuffTime = currentTime
         end
     else

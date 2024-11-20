@@ -3,6 +3,7 @@ local spells = require('spells')
 local utils = require('utils')
 local gui = require('gui')
 local tank = require('tank')
+local assist = require('assist')
 
 local DEBUG_MODE = false
 -- Debug print helper function
@@ -31,13 +32,20 @@ end
 
 -- Function to handle the heal routine and return
 local function handleTankRoutineAndReturn()
-    debugPrint("Handling tank routine and return")
+    debugPrint("DEBUG: Entering handleTankRoutineAndReturn")
     tank.tankRoutine()
     utils.monitorNav()
     return true
 end
 
-function selfbuffer.buffRoutine()
+local function handleAssistRoutineAndReturn()
+    debugPrint("DEBUG: Entering handleTankRoutineAndReturn")
+        assist.assistRoutine()
+        utils.monitorNav()
+        return true
+end
+
+function selfbuffer.selfBuffRoutine()
     if not gui.botOn and gui.buffsOn then return end
 
     if not preCastChecks() then
@@ -113,18 +121,15 @@ function selfbuffer.processBuffQueue()
             debugPrint("Bot is off, stopping buff routine")
             return
         end
-        if not handleTankRoutineAndReturn() then
-            debugPrint("Tank routine failed")
-            return
+
+        if gui.botOn and gui.tankOn then
+            if not handleTankRoutineAndReturn() then return end
+        elseif gui.botOn and gui.assistOn then
+            if not handleAssistRoutineAndReturn() then return end
         end
 
         if not preCastChecks() then
             debugPrint("Pre-cast checks failed")
-            return
-        end
-
-        if not handleTankRoutineAndReturn() then
-            debugPrint("Tank routine failed")
             return
         end
 
@@ -146,12 +151,12 @@ function selfbuffer.processBuffQueue()
 
         -- Ensure spell is ready before proceeding
         while not mq.TLO.Me.SpellReady(buffTask.spell)() and readyAttempt < maxReadyAttempts do
-            if not handleTankRoutineAndReturn() then
-                debugPrint("Tank routine failed")
-                return
-            end
+            if gui.botOn and gui.tankOn then
+                if not handleTankRoutineAndReturn() then return end
+            elseif gui.botOn and gui.assistOn then
+                if not handleAssistRoutineAndReturn() then return end
                 debugPrint("Spell not ready, waiting...")
-            if not gui.botOn then
+            elseif not gui.botOn then
                 debugPrint("Bot is off, stopping buff routine")
                 return
             end
