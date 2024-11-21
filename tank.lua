@@ -193,9 +193,8 @@ function tank.tankRoutine()
                 mq.delay(100)
             end
         end
-        debugPrint("Combat state: ", mq.TLO.Me.CombatState())
 
-        while mq.TLO.Me.CombatState() == "COMBAT" and target and target == mq.TLO.Target.ID() and not mq.TLO.Target.Dead() do
+        while mq.TLO.Me.CombatState() == "COMBAT" and not mq.TLO.Target.Dead() do
             debugPrint("Combat state: ", mq.TLO.Me.CombatState())
 
             if not gui.botOn and not gui.tankOn then
