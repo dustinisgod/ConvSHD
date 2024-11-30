@@ -207,15 +207,6 @@ function tank.tankRoutine()
                 return
             end
 
-            if mq.TLO.Target() and target and (mq.TLO.Target.ID() ~= target.ID or mq.TLO.Target.Dead() == true or (mq.TLO.Target.PctHPs() ~= nil and mq.TLO.Target.PctHPs() < 0)) then
-                mq.cmdf("/target id %d", target.ID())
-                mq.delay(200)
-                debugPrint("Target set to:", target.CleanName())
-            elseif not mq.TLO.Target() or mq.TLO.Target() and (mq.TLO.Target.Dead() or mq.TLO.Target.PctHPs() < 0) then
-                debugPrint("Target is dead. Exiting combat loop.")
-                break
-            end
-
             if mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and  mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() and not mq.TLO.Me.Combat() then
                 debugPrint("Starting attack on target:", mq.TLO.Target.CleanName())
                 mq.cmd("/squelch /attack on")

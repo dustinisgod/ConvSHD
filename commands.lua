@@ -48,33 +48,6 @@ local function setBotOnOff(value) setToggleOption("botOn", value, "Bot") end
 local function setSwitchWithMA(value) setToggleOption("switchWithMA", value, "Switch with MA") end
 local function setSitMedOnOff(value) setToggleOption("sitMed", value, "Sit to Med") end
 
--- Combined function for setting main assist, range, and percent
-local function setAssist(name, range, percent)
-    if name then
-        utils.setMainAssist(name)
-        print("Main Assist set to", name)
-    else
-        print("Error: Main Assist name is required.")
-        return
-    end
-
-    -- Set the assist range if provided
-    if range and string.match(range, "^%d+$") then
-        gui.assistRange = tonumber(range)
-        print("Assist Range set to", gui.assistRange)
-    else
-        print("Assist Range not provided or invalid. Current range:", gui.assistRange)
-    end
-
-    -- Set the assist percent if provided
-    if percent and string.match(percent, "^%d+$") then
-        gui.assistPercent = tonumber(percent)
-        print("Assist Percent set to", gui.assistPercent)
-    else
-        print("Assist Percent not provided or invalid. Current percent:", gui.assistPercent)
-    end
-end
-
 local function setChaseOnOff(value)
     if value == "" then
         print("Usage: /convSHD Chase <targetName> <distance> or /convSHD Chase off/on")
@@ -191,48 +164,30 @@ local function setTankIgnore(scope, action)
     end
 end
 
-local function setTankorAssist(command, mode, value, optionalArg)
-    if command == "tank" or command == "assist" then
-        -- Handle enabling/disabling melee for tank or assist
-        if value == "on" then
-            if command == "tank" then
-                gui.tankOn = true
-                gui.assistOn = false
-                print("Tank Melee is now enabled.")
-            elseif command == "assist" then
-                gui.assistOn = true
-                gui.tankOn = false
-                print("Assist Melee is now enabled.")
-            end
-        elseif value == "off" then
-            if command == "tank" then
-                gui.tankOn = false
-                print("Tank Melee is now disabled.")
-            elseif command == "assist" then
-                gui.assistOn = false
-                print("Assist Melee is now disabled.")
-            end
-        elseif command == "assist" and tonumber(optionalArg) then
-            gui.assistPercent = tonumber(optionalArg)
-            print(string.format("Assist Percent is now set to %d%%.", gui.assistPercent))
-        else
-            print("Usage: /convSHD " .. command .. " on/off or /convSHD assist gui.assistRange [assistPercent]")
-        end
-    elseif command == "tankrange" or command == "assistrange" then
-        -- Handle range adjustments
-        if tonumber(value) then
-            if command == "assistrange" then
-                gui.assistRange = tonumber(value)
-                print(string.format("Assist Range is now set to %d.", gui.assistRange))
-            elseif command == "tankrange" then
-                gui.tankRange = tonumber(value)
-                print(string.format("Tank Range is now set to %d.", gui.tankRange))
-            end
-        else
-            print(string.format("Usage: /convSHD %s [range_value]", command))
-        end
+-- Combined function for setting main assist, range, and percent
+local function setAssist(name, range, percent)
+    if name then
+        utils.setMainAssist(name)
+        print("Main Assist set to", name)
     else
-        print("Usage: /convSHD tank/assist on/off or /convSHD tankrange/assistrange [range_value] or /convSHD assist [range] [percent]")
+        print("Error: Main Assist name is required.")
+        return
+    end
+
+    -- Set the assist range if provided
+    if range and string.match(range, "^%d+$") then
+        gui.assistRange = tonumber(range)
+        print("Assist Range set to", gui.assistRange)
+    else
+        print("Assist Range not provided or invalid. Current range:", gui.assistRange)
+    end
+
+    -- Set the assist percent if provided
+    if percent and string.match(percent, "^%d+$") then
+        gui.assistPercent = tonumber(percent)
+        print("Assist Percent set to", gui.assistPercent)
+    else
+        print("Assist Percent not provided or invalid. Current percent:", gui.assistPercent)
     end
 end
 
@@ -269,15 +224,8 @@ local function commandHandler(command, ...)
         setBuffsOn(args[1])
     elseif command == "feigndeath" then
         setFeignDeath(args[1])
-    elseif command == "tank" or command == "assist" or command == "tankrange" or command == "assistrange" then
-        if args[1] then
-            -- If the command is 'assist', check for an optional third argument
-            if command == "assist" and args[2] then
-                setTankorAssist(command, nil, args[1], args[2]) -- Pass the command, mode, value, and the optional assistPercent
-            else
-                setTankorAssist(command, nil, args[1]) -- Pass the command, mode, and value only
-            end
-        end
+    elseif command == "assist" then
+        setAssist(args[1], args[2], args[3])
     elseif command == "sitmed" then
         setSitMedOnOff(args[1])
     elseif command == "melee" then

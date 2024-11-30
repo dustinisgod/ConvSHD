@@ -13,7 +13,7 @@ local function debugPrint(...)
 end
 
 local assist = {}
-
+local charName = mq.TLO.Me.Name()
 local charLevel = mq.TLO.Me.Level()
 
 local function hasEnoughMana(spellName)
@@ -44,11 +44,15 @@ local function currentlyActive(spell)
     local buffCount = mq.TLO.Target.BuffCount() or 0
     for i = 1, buffCount do
         if mq.TLO.Target.Buff(i).Name() == spellName then
-            return true -- Spell is active on the target
+            if mq.TLO.Target.Buff(spellName).Caster() == charName then
+                return true -- Spell is active on the target
+            else
+                return false
+            end
+        else
+            return false
         end
     end
-
-    return false -- Spell is not active on the target
 end
 
 function assist.assistRoutine()
