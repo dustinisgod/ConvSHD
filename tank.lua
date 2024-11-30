@@ -320,6 +320,11 @@ function tank.tankRoutine()
                 end
             end
 
+            if target.Dead() then
+                debugPrint("Target is dead; exiting combat loop.")
+                return
+            end
+
             mq.delay(50)
         end
     end
