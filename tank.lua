@@ -84,7 +84,6 @@ local function inRange(spellName)
     return rangeCheck
 end
 
-
 local function currentlyActive(spell)
     if not mq.TLO.Target() then
         print("No target selected.")
@@ -120,11 +119,10 @@ function tank.tankRoutine()
     end
 
     local stickDistance = gui.stickDistance
-    local lowerBound = stickDistance * 0.5
+    local lowerBound = stickDistance * 0.9
     local upperBound = stickDistance * 1.1
 
     while true do
-        
         if not gui.botOn and not gui.tankOn then
             debugPrint("Bot or melee mode is off; exiting combat loop.")
             mq.cmd("/squelch /attack off")
@@ -164,10 +162,9 @@ function tank.tankRoutine()
                 end
                 return
             end
-        
+
             return
         end
-        
 
         local target = table.remove(mobsInRange, 1)
         debugPrint("Target:", target)
@@ -317,9 +314,6 @@ function tank.tankRoutine()
             local lastStickDistance = nil
 
             if mq.TLO.Target() and mq.TLO.Stick() == "ON" then
-                local stickDistance = gui.stickDistance -- current GUI stick distance
-                local lowerBound = stickDistance * 0.9
-                local upperBound = stickDistance * 1.1
                 local targetDistance = mq.TLO.Target.Distance()
                 
                 -- Check if stickDistance has changed

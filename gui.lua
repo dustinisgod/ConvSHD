@@ -256,6 +256,7 @@ local function controlGUI()
             gui.returnToCamp = currentReturnToCamp
                 if gui.returnToCamp then
                     gui.chaseOn = false
+                    gui.travelTank = false
                 else
                     local nav = require('nav')
                     nav.campLocation = nil
@@ -283,6 +284,7 @@ local function controlGUI()
                     gui.returnToCamp = false
                     nav.campLocation = nil
                     gui.pullOn = false
+                    gui.travelTank = false
                 end
             previousChaseOn = currentChaseOn
         end
