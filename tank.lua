@@ -60,10 +60,30 @@ local function hasEnoughMana(spellName)
 end
 
 local function inRange(spellName)
-    local rangeCheck = mq.TLO.Target() and spellName and mq.TLO.Target.Distance() and mq.TLO.Target.Distance() <= mq.TLO.Spell(spellName).Range() or false
-    debugPrint("Checking range for spell:", spellName, "In range:", rangeCheck)
+    local rangeCheck = false
+
+    if mq.TLO.Target() and spellName then
+        local targetDistance = mq.TLO.Target.Distance()
+        local spellRange = mq.TLO.Spell(spellName) and mq.TLO.Spell(spellName).Range()
+
+        if targetDistance and spellRange then
+            rangeCheck = targetDistance <= spellRange
+        else
+            debugPrint("DEBUG: Target distance or spell range is nil for spell:", spellName)
+        end
+    else
+        if not mq.TLO.Target() then
+            debugPrint("DEBUG: No target available for range check.")
+        end
+        if not spellName then
+            debugPrint("DEBUG: Spell name is nil.")
+        end
+    end
+
+    debugPrint("DEBUG: Checking range for spell:", spellName, "In range:", tostring(rangeCheck))
     return rangeCheck
 end
+
 
 local function currentlyActive(spell)
     if not mq.TLO.Target() then
@@ -187,7 +207,7 @@ function tank.tankRoutine()
             debugPrint("Starting attack on target:", mq.TLO.Target.CleanName())
             mq.cmd("/squelch /attack on")
             mq.delay(100)
-            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and not mq.TLO.Me.Pet.Combat() then
+            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and not mq.TLO.Me.Pet.Combat() and mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and  mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
                 debugPrint("Sending pet to attack.")
                 mq.cmd("/squelch /pet attack")
                 mq.delay(100)
@@ -211,7 +231,7 @@ function tank.tankRoutine()
                 debugPrint("Starting attack on target:", mq.TLO.Target.CleanName())
                 mq.cmd("/squelch /attack on")
                 mq.delay(100)
-                if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and not mq.TLO.Me.Pet.Combat() then
+                if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and not mq.TLO.Me.Pet.Combat() and mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and  mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
                     debugPrint("Sending pet to attack.")
                     mq.cmd("/squelch /pet attack")
                     mq.delay(100)
@@ -231,7 +251,7 @@ function tank.tankRoutine()
                             mq.cmd("/squelch /attack off")
                             mq.delay(100)
                         end
-                        if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and mq.TLO.Me.Pet.Combat() then
+                        if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and mq.TLO.Me.Pet.Combat() and mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and  mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
                             mq.cmd("/squelch /pet back")
                             mq.delay(100)
                         end
