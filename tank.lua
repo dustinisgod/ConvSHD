@@ -60,7 +60,7 @@ local function hasEnoughMana(spellName)
 end
 
 local function inRange(spellName)
-    local rangeCheck = mq.TLO.Target() and spellName and mq.TLO.Target.Distance() <= mq.TLO.Spell(spellName).Range() or false
+    local rangeCheck = mq.TLO.Target() and spellName and mq.TLO.Target.Distance() and mq.TLO.Target.Distance() <= mq.TLO.Spell(spellName).Range() or false
     debugPrint("Checking range for spell:", spellName, "In range:", rangeCheck)
     return rangeCheck
 end
