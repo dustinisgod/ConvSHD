@@ -117,7 +117,8 @@ local lastBuffTime = 0
 function utils.monitorBuffs()
 local selfbuffer = require('selfbuffer')
     debugPrint("monitorBuffs")
-    if gui.botOn and gui.buffsOn then
+    if gui.botOn and gui.buffsOn and not mq.TLO.Me.CombatState() == "COMBAT" then
+        debugPrint("monitorBuffs: botOn and buffsOn")
         if not gui then
             printf("Error: gui is nil")
             return
@@ -126,7 +127,7 @@ local selfbuffer = require('selfbuffer')
         local currentTime = os.time()
 
         -- Check buffs every 5 minutes (300 seconds)
-        if gui.buffsOn and (currentTime - lastBuffTime >= 30) then
+        if gui.buffsOn and not mq.TLO.Me.CombatState() == "COMBAT" and (currentTime - lastBuffTime >= 30) then
             debugPrint("Run Buff routine")
             selfbuffer.selfBuffRoutine()
             lastBuffTime = currentTime
@@ -165,7 +166,7 @@ local lastPetTime = 0
 function utils.monitorPet()
 local pet = require('pet')
 debugPrint("monitorPet")
-    if gui.botOn and gui.usePet then
+    if gui.botOn and gui.usePet and mq.TLO.Me.CombatState ~= "COMBAT" then
         if not gui then
             printf("Error: gui is nil")
             return

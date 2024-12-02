@@ -22,6 +22,7 @@ local function buildMobQueue(range)
     local ignoreList = utils.tankConfig[zoneName] or {}
     local globalIgnoreList = utils.tankConfig.globalIgnoreList or {}
 
+    -- Filter mobs within range and not ignored
     local mobs = mq.getFilteredSpawns(function(spawn)
         local mobName = spawn.CleanName() or ""
         local isPlayerPet = spawn.Owner() and spawn.Owner.Type() == "PC"
@@ -35,14 +36,18 @@ local function buildMobQueue(range)
                not isIgnored
     end)
 
-    -- Sort mobs by priority: named mobs first, then by level (descending)
+    -- Sort mobs by priority: PctHPs (ascending), Named, then Level (descending)
     table.sort(mobs, function(a, b)
+        local aPctHPs = a.PctHPs() or 100
+        local bPctHPs = b.PctHPs() or 100
         local aNamed = a.Named() or false
         local bNamed = b.Named() or false
         local aLevel = a.Level() or 0
         local bLevel = b.Level() or 0
 
-        if aNamed ~= bNamed then
+        if aPctHPs ~= bPctHPs then
+            return aPctHPs < bPctHPs -- prioritize lower HP percentage
+        elseif aNamed ~= bNamed then
             return aNamed -- prioritize named mobs
         else
             return aLevel > bLevel -- then by level, descending
@@ -306,6 +311,15 @@ function tank.tankRoutine()
                         mq.delay(100)
                     end
                     while mq.TLO.Me.Casting() do
+                        if mq.TLO.Target() and not mq.TLO.Target.LineOfSight() then
+                            debugPrint("Interrupting spell cast.")
+                            mq.cmd("/squelch /stopcast")
+                            mq.delay(100)
+                            break
+                        elseif not mq.TLO.Target() or target.Dead() then
+                            mq.cmd("/squelch /stopcast")
+                            break
+                        end
                         mq.delay(10)
                     end
                 end
