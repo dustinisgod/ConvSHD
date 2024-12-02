@@ -238,6 +238,13 @@ function tank.tankRoutine()
                     mq.cmd("/squelch /pet attack")
                     mq.delay(100)
                 end
+                if gui.usePet and mq.TLO.Pet.Combat() and mq.TLO.Pet.Target() and mq.TLO.Target() and mq.TLO.Pet.Target() ~= mq.TLO.Target() then
+                    debugPrint("Setting pet target to:", mq.TLO.Target.CleanName())
+                    mq.cmd("/squelch /pet back")
+                    mq.delay(100)
+                    mq.cmd("/squelch /pet attack")
+                    mq.delay(100)
+                end
             end
 
             if mq.TLO.Target() and mq.TLO.Me.PctAggro() < 100 then
