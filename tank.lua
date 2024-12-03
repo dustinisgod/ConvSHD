@@ -162,7 +162,7 @@ function tank.tankRoutine()
                 mq.delay(100)
                 if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and mq.TLO.Me.Pet.Combat() then
                     debugPrint("Calling pet back.")
-                    mq.cmd("/squelch /pet back")
+                    mq.cmd("/squelch /pet back off")
                     mq.delay(100)
                 end
                 return
@@ -216,7 +216,7 @@ function tank.tankRoutine()
             end
         end
 
-        while mq.TLO.Me.CombatState() == "COMBAT" and not mq.TLO.Target.Dead() do
+        while mq.TLO.Me.CombatState() == "COMBAT" and mq.TLO.Target() and not mq.TLO.Target.Dead() do
             debugPrint("Combat state: ", mq.TLO.Me.CombatState())
 
             if not gui.botOn and not gui.tankOn then
@@ -240,7 +240,7 @@ function tank.tankRoutine()
                 end
                 if gui.usePet and mq.TLO.Pet.Combat() and mq.TLO.Pet.Target() and mq.TLO.Target() and mq.TLO.Pet.Target() ~= mq.TLO.Target() then
                     debugPrint("Setting pet target to:", mq.TLO.Target.CleanName())
-                    mq.cmd("/squelch /pet back")
+                    mq.cmd("/squelch /pet back off")
                     mq.delay(100)
                     mq.cmd("/squelch /pet attack")
                     mq.delay(100)
@@ -254,14 +254,14 @@ function tank.tankRoutine()
                     local campY = tonumber(nav.campLocation.y) or 0
                     local distanceToCamp = math.sqrt((playerX - campX)^2 + (playerY - campY)^2)
 
-                    if gui.returnToCamp and distanceToCamp > 100 then
+                    if gui.returntocamp and distanceToCamp > 100 then
                         debugPrint("Returning to camp location.")
                         if mq.TLO.Me.Combat() then
                             mq.cmd("/squelch /attack off")
                             mq.delay(100)
                         end
                         if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and mq.TLO.Me.Pet.Combat() and mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and  mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
-                            mq.cmd("/squelch /pet back")
+                            mq.cmd("/squelch /pet back off")
                             mq.delay(100)
                         end
                         mq.cmd("/stick off")
@@ -357,7 +357,7 @@ function tank.tankRoutine()
 
             if target.Dead() then
                 debugPrint("Target is dead; exiting combat loop.")
-                return
+                break
             end
 
             mq.delay(50)
