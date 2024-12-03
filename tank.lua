@@ -227,6 +227,14 @@ function tank.tankRoutine()
         while mq.TLO.Me.CombatState() == "COMBAT" and mq.TLO.Target() and not mq.TLO.Target.Dead() do
             debugPrint("Combat state: ", mq.TLO.Me.CombatState())
 
+            if gui.travelTank then
+                debugPrint("Travel mode is enabled.")
+                if mq.TLO.Navigation.Active() and not mq.TLO.Navigation.Paused() then
+                    debugPrint("Pausing navigation.")
+                    mq.cmd("/squelch /nav pause")
+                end
+            end
+
             if not gui.botOn and not gui.tankOn then
                 debugPrint("Bot or melee mode is off; exiting combat loop.")
                 mq.cmd("/squelch /attack off")
