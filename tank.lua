@@ -264,14 +264,9 @@ function tank.tankRoutine()
                 if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and not mq.TLO.Me.Pet.Combat() and mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and  mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
                     debugPrint("Sending pet to attack.")
                     mq.cmd("/squelch /pet attack")
-                    mq.delay(100)
-                end
-                if gui.usePet and mq.TLO.Pet.Combat() and mq.TLO.Pet.Target() and mq.TLO.Target() and mq.TLO.Pet.Target() ~= mq.TLO.Target() then
+                elseif mq.TLO.Target() and gui.petOn and mq.TLO.Me.Pet() ~= 'NO PET' and mq.TLO.Me.Pet.Combat() and (mq.TLO.Target.Mezzed() or mq.TLO.Pet.Distance() > gui.tankRange) then
                     debugPrint("Setting pet target to:", mq.TLO.Target.CleanName())
                     mq.cmd("/squelch /pet back off")
-                    mq.delay(100)
-                    mq.cmd("/squelch /pet attack")
-                    mq.delay(100)
                 end
             end
 
