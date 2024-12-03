@@ -81,17 +81,17 @@ function assist.assistRoutine()
     end
 
     -- Re-check the target after assisting to confirm it's an NPC within range
-    if not mq.TLO.Target() or mq.TLO.Target.Type() ~= "NPC" then
+    if not mq.TLO.Target() or (mq.TLO.Target() and  mq.TLO.Target.Type() ~= "NPC") then
         return
     end
 
     if mq.TLO.Target() and mq.TLO.Target.PctHPs() <= gui.assistPercent and mq.TLO.Target.Distance() <= gui.assistRange and mq.TLO.Stick() == "OFF" and not mq.TLO.Target.Mezzed() then
-        if gui.stickFront then
+        if mq.TLO.Target() and gui.stickFront then
             mq.cmd('/nav stop')
             mq.delay(100)
             mq.cmdf("/stick front %d uw", gui.stickDistance)
             mq.delay(100)
-        elseif gui.stickBehind then
+        elseif mq.TLO.Target() and gui.stickBehind then
             mq.cmd('/nav stop')
             mq.delay(100)
             mq.cmdf("/stick behind %d uw", gui.stickDistance)
@@ -115,11 +115,6 @@ function assist.assistRoutine()
         debugPrint("Combat state: ", mq.TLO.Me.CombatState())
         if not gui.botOn and not gui.assistOn then
             return
-        end
-
-        if not mq.TLO.Target() or mq.TLO.Target() and (mq.TLO.Target.Dead() or mq.TLO.Target.PctHPs() < 0) then
-            debugPrint("Target is dead. Exiting combat loop.")
-            break
         end
 
         if mq.TLO.Target() and mq.TLO.Target.Distance() <= gui.assistRange and mq.TLO.Target.LineOfSight() and not mq.TLO.Me.Combat() then
@@ -177,21 +172,30 @@ function assist.assistRoutine()
             local targetDistance = mq.TLO.Target.Distance()
             
             -- Check if stickDistance has changed
-            if lastStickDistance ~= stickDistance then
+            if lastStickDistance and lastStickDistance ~= stickDistance then
                 lastStickDistance = stickDistance
                 mq.cmdf("/squelch /stick moveback %s", stickDistance)
             end
     
             -- Check if the target distance is out of bounds and adjust as necessary
-            if mq.TLO.Target.ID() then
-                if targetDistance > upperBound then
+            if mq.TLO.Target() and not mq.TLO.Target.Dead() then
+                if mq.TLO.Target() and targetDistance > upperBound then
                     mq.cmdf("/squelch /stick moveback %s", stickDistance)
                     mq.delay(100)
-                elseif targetDistance < lowerBound then
+                elseif mq.TLO.Target() and targetDistance < lowerBound then
                     mq.cmdf("/squelch /stick moveback %s", stickDistance)
                     mq.delay(100)
                 end
             end
+        end
+
+        if mq.TLO.Me.Combat() and not mq.TLO.Stick() then
+            mq.cmd("/squelch /attack off")
+        end
+
+        if mq.TLO.Target() and mq.TLO.Target.Dead() or not mq.TLO.Target() then
+            mq.cmd("/squelch /attack off")
+            return
         end
 
         mq.delay(100)
