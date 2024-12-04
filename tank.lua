@@ -127,7 +127,10 @@ function tank.tankRoutine()
         mq.delay(100)
         mq.cmd("/squelch /stick off")
         mq.delay(100)
-        mq.cmd("/squelch /nav off")
+        if mq.TLO.Navigation.Active() then
+            debugPrint("Stopping navigation.")
+            mq.cmd("/squelch /nav stop")
+        end
         return
     end
 
@@ -142,7 +145,10 @@ function tank.tankRoutine()
             mq.delay(100)
             mq.cmd("/squelch /stick off")
             mq.delay(100)
-            mq.cmd("/squelch /nav off")
+            if mq.TLO.Navigation.Active() then
+                debugPrint("Stopping navigation.")
+                mq.cmd("/squelch /nav stop")
+            end
             return
         end
 
@@ -200,7 +206,10 @@ function tank.tankRoutine()
             if mq.TLO.Navigation.Active() and not mq.TLO.Navigation.Paused() then
                 if not gui.travelTank then
                     debugPrint("Stopping navigation.")
-                    mq.cmd('/nav stop')
+                    if mq.TLO.Navigation.Active() then
+                        debugPrint("Stopping navigation.")
+                        mq.cmd("/squelch /nav stop")
+                    end
                 elseif gui.travelTank then
                     debugPrint("Pausing navigation.")
                     mq.cmd('/nav pause')
@@ -241,7 +250,10 @@ function tank.tankRoutine()
                 mq.delay(100)
                 mq.cmd("/squelch /stick off")
                 mq.delay(100)
-                mq.cmd("/squelch /nav off")
+                if mq.TLO.Navigation.Active() then
+                    debugPrint("Stopping navigation.")
+                    mq.cmd("/squelch /nav stop")
+                end
                 return
             end
 
