@@ -320,8 +320,10 @@ function tank.tankRoutine()
                         debugPrint("Casting spell:", spellName, "on slot", slot)
                         mq.cmdf("/squelch /stick off")
                         mq.delay(100)
-                        mq.cmdf("/cast %d", slot)
-                        mq.delay(100)
+                        if not mq.TLO.Me.Moving() then
+                            mq.cmdf("/cast %d", slot)
+                            mq.delay(100)
+                        end
 
                         while mq.TLO.Me.Casting() do
                             if mq.TLO.Target() and not mq.TLO.Target.LineOfSight() then
