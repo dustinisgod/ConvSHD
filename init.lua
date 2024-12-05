@@ -19,8 +19,9 @@ utils.PluginCheck()
 
 mq.cmd('/assist off')
 
-if mq.TLO.Me.Pet() ~= "NO PET" then
-    mq.cmd("/pet hold on")
+---@diagnostic disable-next-line: undefined-field
+if mq.TLO.Pet.IsSummoned() and not mq.TLO.Pet.GHold() then
+    mq.cmd("/pet ghold on")
 end
 
 mq.imgui.init('controlGUI', gui.controlGUI)

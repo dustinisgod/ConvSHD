@@ -144,11 +144,11 @@ function assist.assistRoutine()
             mq.delay(100)
         end
 
-        if mq.TLO.Target() and mq.TLO.Target.PctHPs() <= gui.assistPercent and mq.TLO.Target.Distance() <= gui.assistRange and not mq.TLO.Target.Mezzed() and gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' then
+        if mq.TLO.Target() and mq.TLO.Target.PctHPs() <= gui.assistPercent and mq.TLO.Target.Distance() <= gui.assistRange and not mq.TLO.Target.Mezzed() and gui.usePet and mq.TLO.Pet.IsSummoned() then
             debugPrint("DEBUG: Target is below assist percent and within assist range. - pet")
             mq.cmd("/squelch /pet attack")
             debugPrint("DEBUG: Pet attack is on.")
-        elseif mq.TLO.Target() and gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and mq.TLO.Me.Pet.Combat() and (mq.TLO.Target.Mezzed() or mq.TLO.Target.PctHPs() > gui.assistPercent or mq.TLO.Pet.Distance() > gui.assistRange) then
+        elseif mq.TLO.Target() and gui.usePet and mq.TLO.Pet.IsSummoned() and mq.TLO.Me.Pet.Combat() and (mq.TLO.Target.Mezzed() or mq.TLO.Target.PctHPs() > gui.assistPercent or mq.TLO.Pet.Distance() > gui.assistRange) then
             debugPrint("DEBUG: Target is mezzed, above assist percent, or out of assist range.")
             mq.cmd("/squelch /pet back off")
         end
@@ -161,11 +161,11 @@ function assist.assistRoutine()
 
         if mq.TLO.Target() and mq.TLO.Target.Distance() <= gui.assistRange and mq.TLO.Target.LineOfSight() then
 
-            if mq.TLO.Target() and mq.TLO.Me.AbilityReady("Bash")() and mq.TLO.Me.Secondary() ~= "0" then
+            if mq.TLO.Target() and mq.TLO.Me.AbilityReady("Bash")() and mq.TLO.Me.Inventory('Offhand').Type() == "Shield" then
                 debugPrint("Using Bash ability.")
                 mq.cmd("/doability Bash")
                 mq.delay(100)
-            elseif mq.TLO.Target() and mq.TLO.Me.AbilityReady("Slam")() and mq.TLO.Me.Secondary() == "0" and mq.TLO.Me.Race() == "Ogre" then
+            elseif mq.TLO.Target() and mq.TLO.Me.AbilityReady("Slam")() and mq.TLO.Me.Inventory('Offhand').Type() ~= "Shield" and mq.TLO.Me.Race() == "Ogre" then
                 debugPrint("Using Slam ability.")
                 mq.cmd("/doability Slam")
                 mq.delay(100)

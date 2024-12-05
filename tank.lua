@@ -176,7 +176,7 @@ function tank.tankRoutine()
                 debugPrint("Exiting combat mode.")
                 mq.cmd("/squelch /attack off")
                 mq.delay(100)
-                if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and mq.TLO.Me.Pet.Combat() then
+                if gui.usePet and mq.TLO.Pet.IsSummoned() and mq.TLO.Me.Pet.Combat() then
                     debugPrint("Calling pet back.")
                     mq.cmd("/squelch /pet back off")
                     mq.delay(100)
@@ -222,12 +222,13 @@ function tank.tankRoutine()
             mq.delay(100, function() return mq.TLO.Stick.Active() end)
         end
 
-        if mq.TLO.Target() and mq.TLO.Me.Combat() ~= nil and not mq.TLO.Me.Combat() and mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() ~= nil and mq.TLO.Target.LineOfSight() then
+        if mq.TLO.Target() and not mq.TLO.Me.Combat() and mq.TLO.Target.Distance() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
             debugPrint("Starting attack on target:", mq.TLO.Target.CleanName())
             mq.cmd("/squelch /attack on")
             mq.delay(100)
-            if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and not mq.TLO.Me.Pet.Combat() and mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
+            if mq.TLO.Target() and gui.usePet and mq.TLO.Pet.IsSummoned() and not mq.TLO.Me.Pet.Combat() and mq.TLO.Target.Distance() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
                 debugPrint("Sending pet to attack.")
+                print("Sending pet to attack.")
                 mq.cmd("/squelch /pet attack")
                 mq.delay(100)
             end
@@ -273,10 +274,10 @@ function tank.tankRoutine()
                 debugPrint("Starting attack on target:", mq.TLO.Target.CleanName())
                 mq.cmd("/squelch /attack on")
                 mq.delay(100)
-                if gui.usePet and mq.TLO.Me.Pet() ~= 'NO PET' and not mq.TLO.Me.Pet.Combat() and mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and  mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
+                if gui.usePet and mq.TLO.Pet.IsSummoned() and not mq.TLO.Me.Pet.Combat() and mq.TLO.Target() and mq.TLO.Target.Distance() ~= nil and  mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
                     debugPrint("Sending pet to attack.")
                     mq.cmd("/squelch /pet attack")
-                elseif mq.TLO.Target() and gui.petOn and mq.TLO.Me.Pet() ~= 'NO PET' and mq.TLO.Me.Pet.Combat() and (mq.TLO.Target.Mezzed() or mq.TLO.Pet.Distance() > gui.tankRange) then
+                elseif mq.TLO.Target() and gui.petOn and mq.TLO.Pet.IsSummoned() and mq.TLO.Me.Pet.Combat() and (mq.TLO.Target.Mezzed() or mq.TLO.Pet.Distance() > gui.tankRange) then
                     debugPrint("Setting pet target to:", mq.TLO.Target.CleanName())
                     mq.cmd("/squelch /pet back off")
                 end
@@ -296,11 +297,11 @@ function tank.tankRoutine()
                     mq.delay(100)
                 end
 
-                if mq.TLO.Target() and mq.TLO.Me.AbilityReady("Bash")() and mq.TLO.Me.Secondary() ~= "0" then
+                if mq.TLO.Target() and mq.TLO.Me.AbilityReady("Bash")() and mq.TLO.Me.Inventory('Offhand').Type() == "Shield" then
                     debugPrint("Using Bash ability.")
                     mq.cmd("/doability Bash")
                     mq.delay(100)
-                elseif mq.TLO.Target() and mq.TLO.Me.AbilityReady("Slam")() and mq.TLO.Me.Secondary() == "0" and mq.TLO.Me.Race() == "Ogre" then
+                elseif mq.TLO.Target() and mq.TLO.Me.AbilityReady("Slam")() and mq.TLO.Me.Inventory('Offhand').Type() ~= "Shield" and mq.TLO.Me.Race() == "Ogre" then
                     debugPrint("Using Slam ability.")
                     mq.cmd("/doability Slam")
                     mq.delay(100)

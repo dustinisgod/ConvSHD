@@ -128,7 +128,7 @@ local selfbuffer = require('selfbuffer')
         local currentTime = os.time()
 
         -- Check buffs every 5 minutes (300 seconds)
-        if gui.buffsOn and not mq.TLO.Me.CombatState() == "COMBAT" and (currentTime - lastBuffTime >= 30) then
+        if gui.buffsOn and not mq.TLO.Me.CombatState() == "COMBAT" and (currentTime - lastBuffTime >= 20) then
             debugPrint("Run Buff routine")
             selfbuffer.selfBuffRoutine()
             lastBuffTime = currentTime
