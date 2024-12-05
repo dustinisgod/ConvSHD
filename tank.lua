@@ -308,10 +308,10 @@ function tank.tankRoutine()
 
                 local spellsToCast = {
                     {name = "LifeTap", spell = spells.findBestSpell("LifeTap", charLevel), slot = 1, cond = charLevel >= 8 and mq.TLO.Me.PctHPs() < 30},
-                    {name = "Snare", spell = spells.findBestSpell("Snare", charLevel), slot = 2, cond = charLevel >= 11 and mq.TLO.Target() and (mq.TLO.Target.Fleeing() or mq.TLO.Me.PctAggro() < 100) and not mq.TLO.Target.Snared()},
+                    {name = "Snare", spell = spells.findBestSpell("Snare", charLevel), slot = 2, cond = charLevel >= 11 and mq.TLO.Target() and (mq.TLO.Target.Fleeing() or mq.TLO.Me.PctAggro() < 100) and not mq.TLO.Target.Snared() and mq.TLO.Me.PctMana() >= 20},
                     {name = "HateIncrease", spell = spells.findBestSpell("HateIncrease", charLevel), slot = 3, cond = charLevel >= 33 and mq.TLO.Target() and mq.TLO.Me.PctAggro() < 100},
-                    {name = "FireDot", spell = spells.findBestSpell("FireDot", charLevel), slot = 4, cond = charLevel >= 5 and mq.TLO.Target() and ((mq.TLO.Me.PctMana() > 60 and mq.TLO.Target.PctHPs() > 60) or mq.TLO.Target.Named())},
-                    {name = "DiseaseDoT", spell = spells.findBestSpell("DiseaseDoT", charLevel), slot = 5, cond = charLevel >= 28 and mq.TLO.Target() and ((mq.TLO.Me.PctMana() > 60 and mq.TLO.Target.PctHPs() > 60) or mq.TLO.Target.Named())},
+                    {name = "FireDot", spell = spells.findBestSpell("FireDot", charLevel), slot = 4, cond = charLevel >= 5 and mq.TLO.Target() and ((mq.TLO.Me.PctMana() > 60 and mq.TLO.Target.PctHPs() > 60) or (mq.TLO.Target.Named() and mq.TLO.Me.PctMana() > 20))},
+                    {name = "DiseaseDoT", spell = spells.findBestSpell("DiseaseDoT", charLevel), slot = 5, cond = charLevel >= 28 and mq.TLO.Target() and ((mq.TLO.Me.PctMana() > 60 and mq.TLO.Target.PctHPs() > 60) or (mq.TLO.Target.Named() and mq.TLO.Me.PctMana() > 20))},
                 }
 
                 for _, spellInfo in ipairs(spellsToCast) do

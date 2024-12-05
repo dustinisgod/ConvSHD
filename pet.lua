@@ -57,9 +57,9 @@ function pet.petRoutine()
                     mq.delay(50) -- Wait until casting is complete
                 end
                 mq.delay(100)
-                if mq.TLO.Me.Pet() ~= "NO PET" then
-                    mq.cmd("/pet hold")
-                end
+            end
+            if mq.TLO.Me.Pet() ~= "NO PET" then
+                mq.cmd("/pet hold on")
             end
         end
     end
