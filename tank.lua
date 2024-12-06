@@ -228,7 +228,6 @@ function tank.tankRoutine()
             mq.delay(100)
             if mq.TLO.Target() and gui.usePet and mq.TLO.Pet.IsSummoned() and not mq.TLO.Me.Pet.Combat() and mq.TLO.Target.Distance() and mq.TLO.Target.Distance() <= gui.tankRange and mq.TLO.Target.LineOfSight() then
                 debugPrint("Sending pet to attack.")
-                print("Sending pet to attack.")
                 mq.cmd("/squelch /pet attack")
                 mq.delay(100)
             end
